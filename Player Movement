@@ -1,0 +1,36 @@
+Module 1 — Player Movement
+
+File	player.gd
+
+Status	✅ Complete
+
+Description	Top-down 8-directional movement with camera follow. WASD input. Normalised diagonal movement.
+
+Input Map
+Action	Key
+move_up	W
+move_down	S
+move_left	A
+move_right	D
+attack_1	J
+attack_2	K
+attack_3	L
+
+
+player.gd
+extends CharacterBody2D
+
+@onready var combat = $Combat
+const SPEED = 200.0
+
+func _physics_process(_delta):
+    var direction = Vector2.ZERO
+    if Input.is_action_pressed("move_right"): direction.x += 1
+    if Input.is_action_pressed("move_left"):  direction.x -= 1
+    if Input.is_action_pressed("move_down"):  direction.y += 1
+    if Input.is_action_pressed("move_up"):    direction.y -= 1
+    velocity = direction.normalized() * SPEED
+    move_and_slide()
+    if Input.is_action_just_pressed("attack_1"): combat.register_input("attack_1")
+    if Input.is_action_just_pressed("attack_2"): combat.register_input("attack_2")
+    if Input.is_action_just_pressed("attack_3"): combat.register_input("attack_3")
