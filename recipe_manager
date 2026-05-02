@@ -1,0 +1,160 @@
+Module 3 - Layer 1 - recipe_manager
+
+extends Node
+
+#════════════════════════════════════
+#	INGREDIENT DEFINITIONS
+#════════════════════════════════════
+
+const INGREDIENTS = {
+	# ———————— MEAT CATEGORY ————————————————————————
+	"chicken":		 		{"name": "Chicken",					"category": "meat",				"rarity": "common",   "value": 10   	},
+	"beef":			 		{"name": "Beef",					"category": "meat",				"rarity": "common",   "value": 15   	},
+	"lamb":			 		{"name": "Lamb",					"category": "meat",				"rarity": "uncommon", "value": 20   	},
+	"pork":			 		{"name": "Pork",					"category": "meat",				"rarity": "common",   "value": 12   	},
+	"venison":		 		{"name": "Venison",					"category": "meat",				"rarity": "rare",     "value": 35   	},
+	"demon_boar":	 		{"name": "Demon Boar",				"category": "meat",				"rarity": "exotic",	  "value": 80   	},
+	
+	
+	# ———————— SEAFOOD CATEGORY ————————————————————————
+	"tuna":					{"name": "Tuna",					"category": "seafood",			"rarity": "common",   "value": 18 		},
+	"salmon":				{"name": "Salmon",					"category": "seafood",			"rarity": "common",   "value": 16		},
+	"prawns":				{"name": "Prawns",					"category": "seafood",			"rarity": "uncommon", "value": 22		},
+	"squid":				{"name": "Squid",					"category": "seafood",			"rarity": "uncommon", "value": 20		},
+	"bluefin_tuna":			{"name": "Bluefin Tuna",			"category": "seafood",			"rarity": "exotic",	  "value": 150		},
+	
+	
+	#—————————— VEGETABLE CATEGORY ———————————————————————
+	"mushrooms":			{"name": "Mushroom",				"category": "vegetable", 		"rarity": "common",		"value": 8		},
+	"bamboo":				{"name": "Bamboo Shoot",			"category": "vegetable", 		"rarity": "uncommon", 	"value": 16		},
+	"daikon":				{"name": "Daikon",					"category": "vegetable", 		"rarity": "common",		"value": 6 		},
+	"herbs":				{"name": "Rare Herbs",				"category": "vegetable",		"rarity": "rare",		"value": 40		},
+	"red_ginger":			{"name": "Red Ginger",				"category": "vegetable",		"rarity": "common",		"value": 8		},
+	"young_ginger": 		{"name": "Young Ginger",			"category": "vegetable",		"rarity": "common",		"value": 8		},
+	"cucumber":				{"name": "Cucumber",				"category": "vegetable",		"rarity": "common",		"value": 5		},
+	
+	#—————————— FRUIT CATEGORY ——————————————————————————
+	"plum":					{"name": "Plum",					"category": "fruit",			"rarity": "uncommon",	"value": 12 	},
+	
+	
+	
+	#————————————— DRY GOODS ——————————————————————————————
+	
+	
+	
+	#—————————— SEASONING CATEGORY ———————————————————————
+	"soy":					{"name": "Soy Sauce",				"category": "seasoning",		"rarity": "common",	  	"value": 5		},
+	"miso":					{"name": "Miso",					"category": "seasoning",		"rarity": "common",	  	"value": 5		},
+	"salt":					{"name": "Salt",					"category": "seasoning",		"rarity": "common",	  	"value": 3		},
+	"rare_spice":			{"name": "Rare Spice",				"category": "seasoning",		"rarity": "exotic",	  	"value": 60		},
+	"dashi_stock":			{"name": "Dashi Stock",				"category": "seasoning",		"rarity": "uncommon",	"value": 8		},
+	
+	#——————————————   PICKLE ——————————————————————————————
+	"pickled_daikon": 		{"name": "Pickled Daikon", 			"category": "pickle",			"rarity": "common",		"value": 12 	},
+	"pickled_plum":   		{"name": "Pickled Plum",			"category": "pickle",			"rarity": "uncommon",	"value": 18 	},
+	"pickled_red_ginger": 	{"name": "Pickled Red Ginger", 		"category": "pickle",  			"rarity": "common",		"value": 10 	},
+	"pickled_young_ginger": {"name": "Pickled Young Ginger",	"category": "pickle", 			"rarity": "uncommon", 	"value": 16 	},
+	"pickled_cucumber":		{"name": "Crisp Pickled Cucumber", 	"category": "pickle", 			"rarity": "common",     "value": 10 	},
+	
+	#—————————— GARNISH CATEGORY ——————————————————————————
+	# Garnishes sit along side the dish rather than being cooked into it
+	# They are all optional - adding them increases quality and presentation score
+	"wasabi":				{"name": "Wasabi",					"category": "garnish",			"rarity": "uncommon",	"value": 5 	},
+	"pickled_ginger":		{"name": "Pickled Ginger",			"category": "garnish",			"rarity": "uncommon",	"value": 4	},
+	"shredded_daikon":		{"name": "Shredded Daikon",			"category":	"garnish",			"rarity": "common",		"value": 3	},
+	"spring_onion":			{"name": "Spring Onion",			"category":	"garnish",			"rarity": "common",		"value": 3	},
+	"sesame_seeds":			{"name": "Sesame Seeds",			"category":	"garnish",			"rarity": "common",		"value": 2	},
+	"edible_flowers":		{"name": "Edible Flowers",			"category":	"garnish",			"rarity": "rare",		"value": 7	},
+	
+	#—————————— ALCOHOL CATEGORY ——————————————————————————
+	"sake":					{"name": "Sake",					"category": "alcohol",			"rarity": "common",		"value": 25	},
+	"shochu":				{"name": "Shochu",					"category": "alcohol",			"rarity": "common",		"value": 20	},
+	"home_brew":			{"name": "Home Brew",				"category": "alcohol",			"rarity": "exotic",		"value": 120},
+	}
+
+
+#═════════════════════════════════════════
+#	RECIPE DEFINITIONS
+#═════════════════════════════════════════
+
+const RECIPES = {
+	
+	#———————————— YAKITORI —————————————————
+	"yakitori": {
+		"name": "Yakitori",
+		"description": "Grilled skewered meat - a izakaya classic",
+		"ingredient_slots": [
+			{ "category": "meat", "quantity": 3, "optional": false },
+			{"category": "garnish",	  "quantity": 1, "optional": true },
+		],
+		"action_sequence": ["chop", "skewer", "bbq", "plate"],
+		"base_price":		120,
+		"cook_time":		8.0,
+		"exotic_bonus":		1.5,
+	},
+	
+	#————————————— MISO SOUP —————————————————
+	"miso_soup": {
+		"name":				"Miso Soup",
+		"description":		"Simple but comforting - Kurou makes it every morning",
+		"ingredient_slots": [
+			{ "category": "seasoning", "quantity": 1, "optional": false },
+			{"category": "garnish",	  "quantity": 1, "optional": true },
+		],
+		"action_sequence": ["chop", "stir", "plate"],
+		"base_price":		60,
+		"cook_time":		5.0,
+		"exotic_bonus":		1.5,
+	},
+	"tempura": {
+		"name":				"Tempura",
+		"description":		"Light crispy battered seafood or vegetable ",
+		"ingredient_slots": [
+			{"category": "seafood",	"quantity": 1, "optional": false },
+			{"category": "vegetable", "quantity": 2, "optional": false },
+			{"category": "garnish",	  "quantity": 1, "optional": true },
+		],
+		"action_sequence": ["chop", "stir", "flip", "plate"],
+		"base_price":		150,
+		"cook_time":		7.0,
+		"exotic_bonus":		1.8,
+	},
+	
+	#—————————————— SASHIMI ——————————————————————
+	"sashimi": {
+		"name":				"Sashimi",
+		"description":		"Raw sliced fish served with the kick of wasabi and salty delicious soy sauce",
+		"ingredient_slots": [
+			{"category": "seafood", "quantity": 2 },
+			{"category": "seasoning", "quantity": 1, "specific": "soy", "optional": false },
+			{"category": "seasoning", "quantity": 1, "specific": "wasabi", "optional": false},
+			{"category": "garnish",	  "quantity": 1, "optional": true },
+		],
+	},
+	
+	#———————————— KARAAGE ————————————————————————
+	"karaage": {
+		"name":			"Karaage",
+		"description": "Japanese fried chicken - Crispy outside, juiciy inside",
+		"ingredient_slots": [
+			{"category": "meat",		"quantity": 2, "specific": "chicken",	"optional": false},
+			{"category": "seasoning",	"quantity": 1, "optional": false},
+			{"category": "garnish",		"quantity": 1, "optional": true},
+		],
+	},
+	
+	#———————————— TSUKEMONO ——————————————————————
+	
+
+	#———————————— EDAMAME —————————————————————————
+	
+	
+	#———————————— AGEDASHI TOFU ———————————————————
+	
+	
+	#———————————— GYOZA ———————————————————————————
+	
+	
+	#———— SUSHI (RAW FISH/KARAAGE/TEMPURA —————————
+	
+}
