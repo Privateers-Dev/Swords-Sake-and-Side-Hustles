@@ -1,0 +1,97 @@
+Module 2 — Fighting Style System
+
+File	combat.gd
+
+Status	✅ Complete
+
+Description	Combo buffer system with priority firing order. 3 attack buttons (J/K/L) produce 12 unique combos across single hits, 2-button and 3-button sequences.
+
+Combo Window	1.0 seconds total   |   2-button fires at timer ≤ 0.3   |   3-button fires instantly
+
+Full Combo List
+Input	Combo Name	Output
+J	snap_jab	Silent — basic hit
+K	snap_kick	Silent — basic hit
+L	heavy_smash	Silent — basic hit
+J → J	double_jab	DOUBLE JAB!
+J → K	twin_kick	TWIN KICK!
+K → L	frying_pan_smash	FRYING PAN?!
+J → J → K	spin_kick	SPIN KICK!
+J → K → K	back_hand	BACK HAND!
+J → K → L	hammer_fist	HAMMER FIST!
+J → L → L	demon_fist	DEMON FIST!
+K → K → J	twin_dragon_kick	TWIN DRAGOOOON KIIIICKKK!
+K → L → L	tuna_slap	TUUUUUNAAA SLAAAAAAP! 🐟
+
+Combo Priority System
+▸	3-button combos — fire instantly the moment the third button is pressed
+▸	2-button combos — wait until combo_timer <= 0.3 before checking, giving time for a third input
+▸	Single hits — fire only when the timer fully expires at 0, never interrupt longer combos
+
+combat.gd
+extends Node
+
+var combo_buffer = []
+var combo_timer  = 0.0
+const COMBO_WINDOW = 1.0
+
+const COMBOS = {
+    ["attack_1"]: "snap_jab",
+    ["attack_2"]: "snap_kick",
+    ["attack_3"]: "heavy_smash",
+    ["attack_1","attack_1"]: "double_jab",
+    ["attack_1","attack_2"]: "twin_kick",
+    ["attack_2","attack_3"]: "frying_pan_smash",
+    ["attack_1","attack_1","attack_2"]: "spin_kick",
+    ["attack_1","attack_2","attack_2"]: "back_hand",
+    ["attack_1","attack_2","attack_3"]: "hammer_fist",
+    ["attack_1","attack_3","attack_3"]: "demon_fist",
+    ["attack_2","attack_2","attack_1"]: "twin_dragon_kick",
+    ["attack_2","attack_3","attack_3"]: "tuna_slap"
+}
+
+func _process(delta):
+    if combo_buffer.size() > 0:
+        combo_timer -= delta
+        if combo_buffer.size() == 2: check_combo()
+        if combo_timer <= 0:
+            if combo_buffer.size() == 1:
+                for combo in COMBOS.keys():
+                    if combo.size() == 1 and combo_buffer == combo:
+                        execute_combo(COMBOS[combo])
+            combo_buffer.clear()
+
+func register_input(action: String):
+    combo_buffer.append(action)
+    combo_timer = COMBO_WINDOW
+    check_combo()
+
+func check_combo():
+    if combo_buffer.size() == 3:
+        for combo in COMBOS.keys():
+            if combo.size() == 3 and combo_buffer == combo:
+                execute_combo(COMBOS[combo])
+                combo_buffer.clear()
+                return
+        combo_buffer.clear()
+        return
+    if combo_buffer.size() == 2 and combo_timer <= 0.3:
+        for combo in COMBOS.keys():
+            if combo.size() == 2 and combo_buffer == combo:
+                execute_combo(COMBOS[combo])
+                combo_buffer.clear()
+                return
+        combo_buffer.clear()
+
+func execute_combo(combo_name: String):
+    match combo_name:
+        "snap_jab", "snap_kick", "heavy_smash": pass
+        "double_jab":      print("DOUBLE JAB!")
+        "twin_kick":       print("TWIN KICK!")
+        "frying_pan_smash":print("FRYING PAN?!")
+        "spin_kick":       print("SPIN KICK!")
+        "back_hand":       print("BACK HAND!")
+        "hammer_fist":     print("HAMMER FIST!")
+        "demon_fist":      print("DEMON FIST!")
+        "twin_dragon_kick":print("TWIN DRAGOOOON KIIIICKKK!")
+        "tuna_slap":       print("TUUUUUNAAA SLAAAAAAP!") # 🐟
