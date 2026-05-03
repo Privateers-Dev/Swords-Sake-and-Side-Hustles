@@ -1,6 +1,8 @@
-Module 3 - Layer 1 - recipe_manager
-
 extends Node
+
+#════════════════════════════════════
+#	INGREDIENT DEFINITIONS
+#════════════════════════════════════
 
 const INGREDIENTS = {
 	# ———————— MEAT CATEGORY ————————————————————————
@@ -59,7 +61,7 @@ const INGREDIENTS = {
 	"dashi_stock":			{"name": "Dashi Stock",				"category": "seasoning",		"rarity": "uncommon",	"value": 8		},
 	"mirin":				{"name": "Mirin",					"category": "seasoning",		"rarity": "common",		"value": 8		},
 	
-	#——————————————   PICKLE ——————————————————————————————
+	#———————————— PICKLE CATEGORY ————————————————————————————
 	"pickled_daikon": 		{"name": "Pickled Daikon", 			"category": "pickle",			"rarity": "common",		"value": 12 	},
 	"pickled_plum":   		{"name": "Pickled Plum",			"category": "pickle",			"rarity": "uncommon",	"value": 18 	},
 	"pickled_red_ginger": 	{"name": "Pickled Red Ginger", 		"category": "pickle",  			"rarity": "common",		"value": 10 	},
@@ -101,6 +103,7 @@ const RECIPES = {
 		"base_price":		120,
 		"cook_time":		8.0,
 		"exotic_bonus":		1.5,
+		"garnish_bonus":	{},
 	},
 	
 	#————————————— MISO SOUP —————————————————
@@ -109,25 +112,38 @@ const RECIPES = {
 		"description":		"Simple but comforting - Kurou makes it every morning",
 		"ingredient_slots": [
 			{ "category": "seasoning", "quantity": 1, "optional": false },
+			{"category": "vegetable",	"quantity": 1,	"optional": false},
 			{"category": "garnish",	  "quantity": 1, "optional": true },
 		],
 		"action_sequence": ["chop", "stir", "plate"],
 		"base_price":		60,
 		"cook_time":		5.0,
-		"exotic_bonus":		1.5,
+		"exotic_bonus":		1.3,
+		"garnish_bonus":{
+			"spring_onion": 0.1,
+			"sesame_seeds": 0.1,
+		}
 	},
+	
+	#————————————— TEMPURA ———————————————————————
 	"tempura": {
 		"name":				"Tempura",
 		"description":		"Light crispy battered seafood or vegetable ",
 		"ingredient_slots": [
 			{"category": "seafood",	"quantity": 1, "optional": false },
 			{"category": "vegetable", "quantity": 2, "optional": false },
+			{"category": "dry_goods", "quantity": 1, "specific": "tempura_flour", "optional": false},
 			{"category": "garnish",	  "quantity": 1, "optional": true },
 		],
 		"action_sequence": ["chop", "stir", "flip", "plate"],
 		"base_price":		150,
 		"cook_time":		7.0,
 		"exotic_bonus":		1.8,
+		"garnish_bonus": {
+			"spring_onion":	150,
+			"sesame_seeds":	0.1,
+			"ediblie_flowers":	0.25,
+		},
 	},
 	
 	#—————————————— SASHIMI ——————————————————————
@@ -135,7 +151,7 @@ const RECIPES = {
 		"name":				"Sashimi",
 		"description":		"Raw sliced fish served with the kick of wasabi and salty delicious soy sauce",
 		"ingredient_slots": [
-			{"category": "seafood", "quantity": 2 },
+			{"category": "seafood", "quantity": 2,						"optional": false },
 			{"category": "seasoning", "quantity": 1, "specific": "soy", "optional": false },
 			{"category": "seasoning", "quantity": 1, "specific": "wasabi", "optional": false},
 			{"category": "garnish",	  "quantity": 1, "optional": true },
@@ -148,9 +164,19 @@ const RECIPES = {
 		"description": "Japanese fried chicken - Crispy outside, juiciy inside",
 		"ingredient_slots": [
 			{"category": "meat",		"quantity": 2, "specific": "chicken",	"optional": false},
-			{"category": "seasoning",	"quantity": 1, "optional": false},
-			{"category": "garnish",		"quantity": 1, "optional": true},
+			{"category": "seasoning",	"quantity": 1, 							"optional": false},
+			{"category": "dry_goods",	"quantity": 1, "specific": "panko",		"optional": false},
+			{"category": "garnish",		"quantity": 1, 							"optional": true},
 		],
+		"action_sequence": ["chop", "stir", "smash", "flip", "plate"],
+		"base_price":	140,
+		"cook_time":	9.0,
+		"exotic_bonus": 1.6,
+		"garnish_bonus": {
+			"spring_onion": 0.1,
+			"sesame_seeds": 0.1,
+			"edible_flowers": 0.25,
+		}
 	},
 	
 	#———————————— TSUKEMONO ——————————————————————
@@ -236,6 +262,8 @@ const RECIPES = {
 		},
 	},
 	
-	#———— SUSHI (RAW FISH/KARAAGE/TEMPURA —————————
+	#———— SUSHI MAKI ROLL —————————
 	
+	
+	#———— SUSHI NIGIRI —————————
 }
