@@ -103,7 +103,7 @@ const RECIPES = {
 		"base_price":		120,
 		"cook_time":		8.0,
 		"exotic_bonus":		1.5,
-		"garnish_bonus":	{},
+		"garnish_bonuses":	{},
 	},
 	
 	#————————————— MISO SOUP —————————————————
@@ -119,7 +119,7 @@ const RECIPES = {
 		"base_price":		60,
 		"cook_time":		5.0,
 		"exotic_bonus":		1.3,
-		"garnish_bonus":{
+		"garnish_bonuses":{
 			"spring_onion": 0.1,
 			"sesame_seeds": 0.1,
 		}
@@ -139,7 +139,7 @@ const RECIPES = {
 		"base_price":		150,
 		"cook_time":		7.0,
 		"exotic_bonus":		1.8,
-		"garnish_bonus": {
+		"garnish_bonuses": {
 			"spring_onion":	150,
 			"sesame_seeds":	0.1,
 			"ediblie_flowers":	0.25,
@@ -151,11 +151,26 @@ const RECIPES = {
 		"name":				"Sashimi",
 		"description":		"Raw sliced fish served with the kick of wasabi and salty delicious soy sauce",
 		"ingredient_slots": [
-			{"category": "seafood", "quantity": 2,						"optional": false },
-			{"category": "seasoning", "quantity": 1, "specific": "soy", "optional": false },
-			{"category": "seasoning", "quantity": 1, "specific": "wasabi", "optional": false},
-			{"category": "garnish",	  "quantity": 1, "optional": true },
+			{"category": "seafood",			"quantity": 2,									"optional": false	},
+			{"category": "seasoning",		"quantity": 1, 	"specific": "soy", 				"optional": false	},
+			{"category": "garnish",			"quantity": 1, 	"specific": "wasabi", 			"optional": false	},
+			{"category": "garnish",			"quantity": 1,	"specific": "shredded_daikon",	"optional": true	},
+			{"category": "garnish",			"quantity": 1,	"specific": "pickled_ginger",	"optional": true	},
+			{"category": "garnish",			"quantity": 1,	"specific": "sesame_seeds",		"optional": true	},
+			{"category": "garnish",			"quantity": 1,	"specific": "spring_onion",		"optional": true	},
+			{"category": "garnish",	 		"quantity": 1, 	"specific": "edible_flowers",	"optional": true	},
 		],
+		"action_sequence": ["slice", "slice", "slice", "grind", "plate", "place", "sprinkle", "sprinkle", "sprinkle"],
+		"base_price":		180,
+		"cook_time":		6.0,
+		"exotic_bonus":		2.0,
+		"garnish_bonuses": {
+			"shredded_daikon": 0.1,
+			"pickled_ginger":  0.15,
+			"sesame_seeds":	   0.1,
+			"spring_onion":	   0.1,
+			"edible_flowers":  0.4,
+		},
 	},
 	
 	#———————————— KARAAGE ————————————————————————
@@ -172,7 +187,7 @@ const RECIPES = {
 		"base_price":	140,
 		"cook_time":	9.0,
 		"exotic_bonus": 1.6,
-		"garnish_bonus": {
+		"garnish_bonuses": {
 			"spring_onion": 0.1,
 			"sesame_seeds": 0.1,
 			"edible_flowers": 0.25,
@@ -180,6 +195,7 @@ const RECIPES = {
 	},
 	
 	#———————————— TSUKEMONO ——————————————————————
+	#Note: requires pickles prepared in advanced via pickle_manager.gd
 	"tsukemono": {
 		"name":			"Tsukemono",
 		"description":  "A selection of Japanese pickled vegetables — sharp, tangy and refreshing",
@@ -212,7 +228,7 @@ const RECIPES = {
 		"base_price":	40,
 		"cook_time":	3.0,
 		"exotic_bonus":	1.0,
-		"garnish": {},
+		"garnish_bonuses": {},
 	},
 	
 	#———————————— AGEDASHI TOFU ———————————————————
@@ -231,7 +247,7 @@ const RECIPES = {
 		"base_price":		130,
 		"cook_time":		8.0,
 		"exotic_bonus":	1.5,
-		"garnish_bonus": {
+		"garnish_bonuses": {
 			"spring_onion":	0.1,
 			"sesame_seeds": 0.1,
 			"shredded_daikon": 0.15,
@@ -262,8 +278,49 @@ const RECIPES = {
 		},
 	},
 	
-	#———— SUSHI MAKI ROLL —————————
-	
-	
-	#———— SUSHI NIGIRI —————————
-}
+	#———— SUSHI — MAKI ROLL —————————
+	"maki_roll": {
+		"name":		"Maki Roll",
+		"description": "Rice and filling rolled in nori — you decide what goes inside",
+		"ingredient_slots": [
+			{"category": "staple",				"quantity": 1,		"specific": "rice",			"optional": false	},
+			{"category": "dry_goods",			"quantity": 1,		"specific": "nori",			"optional": false	},
+			{"category": "any",					"quantity": 2,									"optional": false	},
+			{"category": "seasoning",			"quantity": 1,									"optional": true	},
+			{"category": "garnish",				"quantity": 1,									"optional": true	},
+		],
+	"action_sequence": ["stir", "place", "spread", "place", "roll", "slice", "plate"],
+	"base_price":		160,
+	"cook_time":		9.0,
+	"exotic_bonus":		2.0,
+	"garnish_bonuses": {
+		"sesame_seeds":	0.15,
+		"spring_onion": 0.1,
+		"edible_flowers": 0.35,
+		"wasabi": 0.1,
+		"pickled_ginger": 0.1,
+	},
+},	
+	#———— SUSHI — NIGIRI —————————
+	"nigiri": {
+		"name":		"Nigiri",
+		"description": "Hand shaped rice with your choice of topping — simple but reqires precision",
+		"ingredient_slots:":[
+			{"category": "staple",				"quantity": 1,		"specific": "rice",			"optional": false },
+			{"category": "any",					"quantity": 1,									"optional": false },
+			{"category": "seasoning",			"quantity": 1,									"optional": true  },
+			{"category": "garnish",				"quantity": 1,									"optional": true  },
+		],
+		"action_sequence": ["stir", "smash", "slice", "place", "plate"],
+		"base_price":		170,
+		"cook_time":		7.0,
+		"exotic_bonus":		2.2,
+		"garnish_bonuses": {
+			"wasabi":		0.15,
+			"pickled_ginger": 0.1,
+			"sesame_seeds": 0.1,
+			"edible_flowers": 0.35,
+			"shredded_daikon": 0.1, 
+		},
+	},
+}	
