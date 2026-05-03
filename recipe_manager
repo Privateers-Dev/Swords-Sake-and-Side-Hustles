@@ -2,10 +2,6 @@ Module 3 - Layer 1 - recipe_manager
 
 extends Node
 
-#════════════════════════════════════
-#	INGREDIENT DEFINITIONS
-#════════════════════════════════════
-
 const INGREDIENTS = {
 	# ———————— MEAT CATEGORY ————————————————————————
 	"chicken":		 		{"name": "Chicken",					"category": "meat",				"rarity": "common",   "value": 10   	},
@@ -32,15 +28,28 @@ const INGREDIENTS = {
 	"red_ginger":			{"name": "Red Ginger",				"category": "vegetable",		"rarity": "common",		"value": 8		},
 	"young_ginger": 		{"name": "Young Ginger",			"category": "vegetable",		"rarity": "common",		"value": 8		},
 	"cucumber":				{"name": "Cucumber",				"category": "vegetable",		"rarity": "common",		"value": 5		},
+	"cabbage":				{"name": "Cabbage",					"category": "vegetable",		"rarity": "common",		"value": 5		},
+	"garlic":				{"name": "Garlic",					"category": "vegetable",		"rarity": "common",		"value": 4		},
+	"soybean":				{"name": "Soy Beans",				"category": "vegetable",		"rarity": "common",		"value": 5		},
+	
 	
 	#—————————— FRUIT CATEGORY ——————————————————————————
 	"plum":					{"name": "Plum",					"category": "fruit",			"rarity": "uncommon",	"value": 12 	},
 	
 	
-	
 	#————————————— DRY GOODS ——————————————————————————————
+	"nori":					{"name": "Nori Seaweed",			"category": "dry_goods",		"rarity": "common",		"value": 6		},
+	"dumpling_wraps":		{"name": "Dumpling Wrappers",		"category": "dry_goods",		"rarity": "common",		"value": 5		},
+	"panko":				{"name": "Panko Breadcrumb",		"category": "dry_goods",		"rarity": "common",		"value": 4		},
+	"tempura_flour":		{"name": "Tempura Flour",			"category":	"dry_goods",		"rarity": "common",		"value": 5		},
 	
 	
+	#———————————— STAPLE CATEGORY —————————————————————————
+	"rice":					{"name": "Rice",					"category": "staple",			"rarity": "common",		"value": 4		},
+	"noodles":				{"name": "Noodles",					"category": "staple",			"rarity": "common",		"value": 6		},
+	"tofu":					{"name": "Tofu",					"category": "staple",			"rarity": "common",		"value": 8		},
+	"rice_flour":			{"name": "Rice Flour",				"category":	"staple",			"rarity": "common",		"value": 6		},
+	"black_rice":			{"name": "Black Rice",				"category": "staple",			"rarity": "uncommon",	"value": 5		},
 	
 	#—————————— SEASONING CATEGORY ———————————————————————
 	"soy":					{"name": "Soy Sauce",				"category": "seasoning",		"rarity": "common",	  	"value": 5		},
@@ -48,6 +57,7 @@ const INGREDIENTS = {
 	"salt":					{"name": "Salt",					"category": "seasoning",		"rarity": "common",	  	"value": 3		},
 	"rare_spice":			{"name": "Rare Spice",				"category": "seasoning",		"rarity": "exotic",	  	"value": 60		},
 	"dashi_stock":			{"name": "Dashi Stock",				"category": "seasoning",		"rarity": "uncommon",	"value": 8		},
+	"mirin":				{"name": "Mirin",					"category": "seasoning",		"rarity": "common",		"value": 8		},
 	
 	#——————————————   PICKLE ——————————————————————————————
 	"pickled_daikon": 		{"name": "Pickled Daikon", 			"category": "pickle",			"rarity": "common",		"value": 12 	},
@@ -144,16 +154,87 @@ const RECIPES = {
 	},
 	
 	#———————————— TSUKEMONO ——————————————————————
-	
+	"tsukemono": {
+		"name":			"Tsukemono",
+		"description":  "A selection of Japanese pickled vegetables — sharp, tangy and refreshing",
+		"ingredient_slots":[
+			# Player picks any 3 pickles from their prepared stock
+			{"category": "pickle", "quantity": 3, "optional": false},
+			# Optional Garnish
+			{"category": "garnish", "quantity": 1, "opitonal": true},
+		],
+		"action_sequence": ["place", "place", "place", "plate"],
+		"base_price":		80,
+		"cook_time":		2.0,
+		"exotic_bonus":		1.4,
+		"garnish_bonuses":{
+			"edible_flowers": 0.3,
+			"sesame_seeds": 0.1,
+			"spring_onion": 0.1,
+		}
+	},
 
 	#———————————— EDAMAME —————————————————————————
-	
+	"edamame": {
+		"name":			"Edamame",
+		"description": "Salted boiled soy beans — the perfect bar snack while you wait",
+		"ingredient_slots": [
+			{"category": "vegetable", "quantity": 1, "specific": "soybean", "optional": false },
+			{"category": "seasoning", "quantity": 1, "specific": "salt", "optional": false },	
+		],
+		"action_sequence": ["stir", "sprinkle", "plate"],
+		"base_price":	40,
+		"cook_time":	3.0,
+		"exotic_bonus":	1.0,
+		"garnish": {},
+	},
 	
 	#———————————— AGEDASHI TOFU ———————————————————
-	
+	"agedashi_tafu": {
+		"name":			"Agedashi Tofu",
+		"description": "Crispy fried tofu in a light dashi broth — silky inside, golden outside",
+		"ingredient_slots": [
+			{"category": "staple",	"quantity": 1, "specific": "tofu",			"optional": false },
+			{"category": "staple",	"quantity": 1, "specific": "rice_flour",	"optional": false },
+			{"category": "seasoning",	"quantity": 1, "specific": "dashi_stock",	"optional": false },
+			{"category": "seasoning",	"quantity": 1, "specific": "soy",			"optional": false },
+			{"category": "seasoning",	"quantity": 1, "specific": "mirin",			"optional": false },
+			{"category": "garnish", "quantity": 1,	"optional": true },
+		],
+		"action_sequence": ["chop", "stir", "flip", "stir", "plate"],
+		"base_price":		130,
+		"cook_time":		8.0,
+		"exotic_bonus":	1.5,
+		"garnish_bonus": {
+			"spring_onion":	0.1,
+			"sesame_seeds": 0.1,
+			"shredded_daikon": 0.15,
+			"edible_flowers": 0.3,
+		},
+	},
 	
 	#———————————— GYOZA ———————————————————————————
-	
+	"gyoza": {
+		"name":			"Gyoza",
+		"description": "Crispy pan fried dumplings — golden on the outside, juicy on the inside",
+		"ingredient_slots": [
+			{"category": "dry_goods",	"quantity": 1, "specific": "dumpling_wraps", "optional": false },
+			{"category": "meat",		"quantity": 1,								 "optional": false },
+			{ "category": "vegetable",  "quantity": 1, "specific": "cabbage",        "optional": false },
+		{ "category": "vegetable",  "quantity": 1, "specific": "garlic",         "optional": false },
+		{ "category": "seasoning",  "quantity": 1, "specific": "soy",            "optional": false },
+		{ "category": "garnish",    "quantity": 1,                               "optional": true  },
+	],
+	"action_sequence": ["chop", "stir", "place", "smash", "stir", "flip", "plate"],
+	"base_price":   140,
+	"cook_time":    10.0,
+	"exotic_bonus": 1.6,
+	"garnish_bonuses": {
+		"spring_onion":  0.1,
+		"sesame_seeds":  0.1,
+		"edible_flowers": 0.25,
+		},
+	},
 	
 	#———— SUSHI (RAW FISH/KARAAGE/TEMPURA —————————
 	
