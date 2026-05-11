@@ -1,0 +1,277 @@
+extends Node
+
+#═══════════════════════════════════════════════════════════════
+#	UPGRADE MANAGER
+#	Handles all storage capacity, upgrade levels and
+#	demon kitchen upgrade bonuses
+#	Works alongside recipe_manager.gd -
+#	recipe_manager calls into this for capacity checks
+#═══════════════════════════════════════════════════════════════
+
+#═══════════════════════════════════════════════════════════════
+#	KITCHEN APPLIANCES
+#═══════════════════════════════════════════════════════════════
+
+const APPLIANCES = {
+	"stove": {
+	"stove":			"Stove",
+	"oni":				"kaki",
+	"element":			"fire",
+	"description": "Used for grilling, frying and BBQ dishes",
+	"tiers": {
+		0: {
+			"name":				"Basic Stove",
+			"description":		"Standard stove — no oni assigned",
+			"cook_time_bonus":	0.0,
+			"quality_bonus":	0.0,
+			"bbq_window_bonus":	0.0,
+			"unlocks":			[],
+		},
+			1: {
+				"name":				"Awakened Stove",
+				"description":		"Kaki stirs within the flame — heat is more responsive",
+				"cook_time_bonus":	0.15,
+				"quality_bonus":	0.1,
+				"bbq_window_bonus": 0.1,
+				"unlocks":			["fire_char_bonus"],
+			},
+			2: {
+				"name":				"Empowered Stove",
+				"description":			"Kaki has settled in — the flame never dies and never burns too hot",
+				"cook_time_bonus":		0.3,
+				"quality_bonus":		0.2,
+				"bbq_window_bonus":		0.25,
+				"unlocks":				["fire_char_bonus", "perfect_grill_chance"],
+			},
+			3: {
+				"name":					"Mastered Stove",
+				"description":			"Kaki is fully bonded — the stove responds to Kurou's intent",
+				"cook_time_bonus":		0.5,
+				"quality_bonus":		0.35,
+				"bbq_window_bonus":		["fire_char_bonus", "perfect_grill_chance", "demon_flame_dish"],
+			},
+		},
+	},
+	
+	"cooking_pot": {
+		"name":				"Cooking Pot",
+		"oni":				"suiki",
+		"element":			"water",
+		"description":		"Used for soups, broths, stews and boiled dishes",
+		"tiers": {
+			0: {
+				"name":					"Basic Cooking Pot",
+				"description":			"Standard pot — no oni assigned",
+				"cook_time_bonus":		0.0,
+				"quality_bonus":		0.0,
+				"stir_accurancy":		0.0,
+				"unlocks":				[],
+			},
+			1: {
+				"name":					"Awakened Cooking Pot",
+				"description":			"Suiki flows within the pot — broth develops richer flavour",
+				"cook_time_bonus":		0.2,
+				"quality_bonus":		0.25,
+				"stir_accuracy":		0.25,
+				"unlocks":				["rich_broth_bonus"],
+			},
+			2: {
+				"name":					"Empowered Cooking Pot",
+				"description":			"Suiki has settled in — the pot maintains perfect temperature",
+				"cook_time_bonus":		0.2,
+				"quality_bonus":		0.25,
+				"stir_accuracy":		0.25,
+				"unlocks":				["rich_broth_bonus", "soup_quality_boost"],
+			},
+			3: {
+				"name":					"Mastered Cooking Pot",
+				"description":			"Suiki is fully bonded — every dish cooked in this pot carries a hint of the sea",
+				"cook_time_bonus":		0.4,
+				"quality_bonus":		0.4,
+				"stir_accuracy":		0.4,
+				"unlocks":				["rich_broth_bonus", "soup_quality_boost", "ocean_depth_dish"],
+				},
+			},
+		},
+		
+		"oven": {
+			"name":			"Oven",
+			"oni":			"doki",
+			"element":		"earth",
+			"description": "Used for baking, roasting and slow cooking dishes",
+			"tiers": {
+				0: {
+					"name":					"Basic Oven",
+					"decription":			"Standard oven — no oni assigned",
+					"cook_time_bonus":		0.0,
+					"quality_bonus":		0.0,
+					"heat_distribution":	0.0,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Oven",
+					"description":			"Doki rumbles within the earth below — heat spreads evenly through the oven",
+					"cook_time_bonus":		0.1,
+					"quality_bonus":		0.1,
+					"heat_distribution":	0.2,
+					"unlocks":				["even_heat_bonus", "baking_recipes"],
+				},
+				2: {
+					"name":					"Empowered Oven",
+					"description":			"Doki has settled in — the oven can reach temperaures no normal fire could achieve",
+					"cook_time_bonus":		0.25,
+					"quality_bonus":		0.2,
+					"heat_distribution":	0.4,
+					"unlocks":				["even_heat_bonus", "baking_recipes", "roast_quality_boost"],
+				},
+				3: {
+					"name":					"Mastered Oven",
+					"description":			"Doki is fully bonded — dishes cooked here carry the warmth of the earth itself",
+					"cook_time_bonus":		0.4,
+					"quality_bonus":		0.35,
+					"heat_distribution":	0.6,
+					"unlocks":				["even_heat_bonus", "baking_recipes", "roast_quality_boost", "earth_blessed_dish"],
+				},
+			},
+		},
+		
+		"brewing_still": {
+			"name":				"Brewing Still",
+			"oni":				"kinki",
+			"element":			"metal",
+			"description":		"Used for distilling and brewing custom alcohol blends",
+			"tiers": {
+				0: {
+					"name":					"Basic Brewing Still",
+					"description":			"Standard Still — no oni assigned",
+					"brew_time_bonus":		0.0,
+					"quality_bonus":		0.0,
+					"exotic_blend":			false,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Brewing Still",
+					"description":			"Kinki's iron skin lines the still — fermtation becomes more efficient",
+					"brew_time_bonus":		0.35,
+					"quality_bonus":		0.25,
+					"exotic_blend":			false,
+					"unlocks":				["faster_ferment", "brew_quality_boost"],
+				},
+				2: {
+					"name":					"Empowered Brewing Still",
+					"description":			"Kinki has settled in — the still can now handle exotic ingredients without losing flavour",
+					"brew_time_bonus":		0.35,
+					"quality_bonus":		0.25,
+					"exotic_blend":			true,
+					"unlocks":				["faster_ferment", "brew_quality_boost", "exotic_brew_slots"],
+				},
+				3: {
+					"name":					"Mastered Brewing Still",
+					"description":			"Kinki is fully bonded — brews produced here are literally indestructible in quality",
+					"brew_time_bonus":		0.5,
+					"quality_bonus":		0.4,
+					"exotic_blend":			true,
+					"unlocks":				["faster_ferment", "brew_quality_boosts", "exotic_brew_slots", "iron_brew_legendary"],
+				},
+			},
+		},
+		"fermenter": {
+			"name":			"Fermenter",
+			"oni":			"fuuki",
+			"element":		"wind",
+			"description":	"Used for pickling and fermenting ingredients over time",
+			"tiers": {
+				0: {
+					"name":					"Basic Fermenter",
+					"despcription":			"Standard Fermenter — no oni assigned",
+					"pickle_time_bonus":	0.0,
+					"quality_bonus":		0.0,
+					"rare_brines":			false,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Fermenter",
+					"description":			"Fuuki's winds flows through the fermenter - circulation speeds the pickling process",
+					"pickle_time_bonus":	0.2,
+					"quality_bonus":		0.1,
+					"rare_brines":			false,
+					"unlocks":				["faster_pickle", "pickle_quality_boost"],
+				},
+				2: {
+					"name":					"Empowered Fermenter",
+					"description":			"Fuuki has settled in — rare brine types become accessible through its elemental knowledge",
+					"pickle_time_bonus":	0.35,
+					"quality_bonus":		0.2,
+					"rare_brines":			false,
+					"unlocks":				["faster_pickle", "pickle_quality_boost", "rare_brine_types"],
+				},
+				3: {
+					"name":					"Mastered Fermenter",
+					"description":			"Fuuki is fully bonded — pickles produced here carry an invisible freshness that customers cannot explain but immidiently notice",
+					"pickle_time_bonus":	0.35,
+					"quality_bonus":		0.2,
+					"rare_brines":			true,
+					"unlocks":				["faster_pickle", "pickle_quality", "rare_brine_types", "wind_kissed_pickle"],
+				},
+			},
+		},
+}
+
+
+#═══════════════════════════════════════════════════════════════
+#	BASE CAPACITY PER CATEGORY
+#	Starting maximum storage for each ingredient category
+#═══════════════════════════════════════════════════════════════
+
+var BASE_CAPACITY = {
+	"meat":				15,
+	"seafood":			15,
+	"vegetable":		25,
+	"fruit":			15,
+	"staple":			40,
+	"seasoning":		30,
+	"dry_goods":		25,
+	"pickle":			10,
+	"garnish":			20,
+	"alcohol":			20,
+}
+
+
+
+#═══════════════════════════════════════════════════════════════
+#			UPGRADE SYSTEM
+#═══════════════════════════════════════════════════════════════
+
+# How much each upgrade level adds to capacity
+const UPGRADE_BONUS = 10
+
+# Max upgrade level per category
+const MAX_UPGRADE_LEVEL = 5
+
+
+#═══════════════════════════════════════════════════════════════
+#	CURRENT UPGRADE LEVELS
+#═══════════════════════════════════════════════════════════════
+
+var storage_upgrades = {
+	"meat":			0,
+	"seafood":		0,
+	"vegetable":	0,
+	"fruit":		0,
+	"staple":		0,
+	"seasoning":	0,
+	"dry_goods":	0,
+	"pickle":		0,
+	"garnish":		0,
+	"alcohol":		0,
+}
+
+#═══════════════════════════════════════════════════════════════
+#	DEMON UPGRADE DEFINITIONS
+# Capturing demons and assigning them to kitchen
+# Utilities gives permanent capacity bonuses
+#═══════════════════════════════════════════════════════════════
+
+const DEMON_UPGRADES = {
+	
+}
