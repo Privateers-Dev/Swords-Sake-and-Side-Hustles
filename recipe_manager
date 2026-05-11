@@ -1,326 +1,335 @@
 extends Node
 
-#════════════════════════════════════
-#	INGREDIENT DEFINITIONS
-#════════════════════════════════════
 
-const INGREDIENTS = {
-	# ———————— MEAT CATEGORY ————————————————————————
-	"chicken":		 		{"name": "Chicken",					"category": "meat",				"rarity": "common",   "value": 10   	},
-	"beef":			 		{"name": "Beef",					"category": "meat",				"rarity": "common",   "value": 15   	},
-	"lamb":			 		{"name": "Lamb",					"category": "meat",				"rarity": "uncommon", "value": 20   	},
-	"pork":			 		{"name": "Pork",					"category": "meat",				"rarity": "common",   "value": 12   	},
-	"venison":		 		{"name": "Venison",					"category": "meat",				"rarity": "rare",     "value": 35   	},
-	"demon_boar":	 		{"name": "Demon Boar",				"category": "meat",				"rarity": "exotic",	  "value": 80   	},
+#══════════════════════════════════════════════════════════════════════
+#		RECIPE MANAGER
+#		Pure functions - no data stored here
+#		
+#		AUTOLOAD ORDER:
+#		1. RecipeDatabase	(/root/RecipeDatabase)
+#		2. UpgradeManager	(/root/UpgradeManager)
+#		3. RecipeManager	(/root/RecipeManager)
+#══════════════════════════════════════════════════════════════════════
+
+#══════════════════════════════════════════════════════════════════════
+#		MANAGER REFERENCE
+#══════════════════════════════════════════════════════════════════════
+func _db() -> Node:
+	return get_node_or_null("/root/RecipeDatabase")
+	
+func _upgrades() -> Node:
+	return get_node_or_null("/root/UpgradeManager")
+	
+
+#══════════════════════════════════════════════════════════════════════
+#			PLAYER INVENTORY
+#══════════════════════════════════════════════════════════════════════	
+
+var inventory = {
+	# Meat
+	"chicken":			5,
+	"beef":				3,
+	# Seafood
+	"tuna":				4,
+	"salmon":			2,
+	# Vegetables
+	"mushrooms":		6,
+	"daikon":			4,
+	"cabbage":			4,
+	"garlic":			6,
+	"soybean":			8,
+	# Fruit
+	"plum":				2,
+	# Dry Goods
+	"nori":				5,
+	"dumpling_wraps":	10,
+	"panko":			8,
+	"tempura_flour":	6,
+	# Staples
+	"rice":				10,
+	"noodles":			5,
+	"tofu":				4,
+	# Seasonings
+	"soy":				10,
+	"miso":				8,
+	"salt":				10,
+	"dashi_stock":		4,
+	"mirin":			5,
+	# Garnishes
+	"wasabi":			3,
+	"pickled_ginger":	4,
+	"sesame_seeds":		6,
+	"spring_onion":		5,
+	# Alcohol
+	"sake":				3,
+}
+
+
+
+##══════════════════════════════════════════════════════════════════════
+#		CURRENT COOKING SESSION
+##══════════════════════════════════════════════════════════════════════
+
+var current_recipe:				String = ""
+var chosen_ingredients:			Array = []
+var chosen_garnishes:			Array = []
+var current_action_index:		int   = 0
+var xook_quality:				float = 0.0
+var garnish_quality_bonus:		float = 0.0
+
+
+
+#══════════════════════════════════════════════════════════════════════
+#		INGREDIENT QUERY FUNCTIONS
+#		Read only - pull data from recipe_database
+#══════════════════════════════════════════════════════════════════════
+
+func get_ingredient(key: String) -> Dictionary:
+	# Returns full ingredient data from database
+	var db = _db()
+	if db and db.INGREDIENTS.has(key):
+		return db.INGREDIENTS[key]
+	return{}
+	
+func get_ingredients_by_category(category: String) -> Array:
+	# Returns all ingredient keys that belong in category
+	var db		= _db()
+	var result = []
+	if not db:
+		return result
+	for key in db.INGREDIENTS:
+		if db.INGREDIENTS[key]["category"] == category:
+			result.append(key)
+	return result
+		
+func get_available_ingredients(category: String) -> Array:
+	# Returns only ingredient keys the player actually has in inventory
+	var available = []
+	for ingredient in get_ingredients_by_category(category):
+		if has_ingredient(ingredient):
+			available.append(ingredient)
+	return available
+	
+func ingredient_exists(key: String) -> bool:
+	# Check if an ingredient key exits in the database
+	var db = _db()
+	return db and db.INGREDIENTS.has(key)
+	
+
+
+##══════════════════════════════════════════════════════════════════════
+#		RECIPE QUERY FUNCTIONS
+#		Read only - pull data from recipe_database
+##══════════════════════════════════════════════════════════════════════
+
+func get_recipe(key: String) -> Dictionary:
+	# Returns full recipe data from database
+	var db = _db()
+	if db and db.RECIPES.has(key):
+		return db.RECIPES[key]
+	return {}
+	
+func get_all_recipe_keys() -> Array:
+	# Returns all recipe keys
+	var db = _db()
+	if not db:
+		return[]
+	return db.RECIPES.keys()
+	
+func recipe_exists(key: String) -> bool:
+	# Checks if a recipe key exists in the database
+	var db = _db()
+	return db and db.RECIPES.has(key)
+	
+func get_recipe_action_sequence(recipe_key: String) -> Array:
+	# Returns the action sequence for a recipe
+	var recipe = get_recipe(recipe_key)
+	if recipe.is_empty():
+		return[]
+	return recipe["action_sequence"]
 	
 	
-	# ———————— SEAFOOD CATEGORY ————————————————————————
-	"tuna":					{"name": "Tuna",					"category": "seafood",			"rarity": "common",   "value": 18 		},
-	"salmon":				{"name": "Salmon",					"category": "seafood",			"rarity": "common",   "value": 16		},
-	"prawns":				{"name": "Prawns",					"category": "seafood",			"rarity": "uncommon", "value": 22		},
-	"squid":				{"name": "Squid",					"category": "seafood",			"rarity": "uncommon", "value": 20		},
-	"bluefin_tuna":			{"name": "Bluefin Tuna",			"category": "seafood",			"rarity": "exotic",	  "value": 150		},
+#══════════════════════════════════════════════════════════════════════
+#		INVENTORY FUNCTIONS
+#══════════════════════════════════════════════════════════════════════
+
+func has_ingredient(ingredient: String) -> bool:
+	# Checks if player has at least 1 of this ingredient
+	return inventory.has(ingredient) and inventory[ingredient] > 0
+	
+func use_ingredient(ingredient: String) -> bool:
+	# Removes 1 of an ingredient from inventory when cooking
+	if has_ingredient(ingredient):
+		inventory[inventory] -= 1
+		var data = get_ingredient(ingredient)
+		if not data.is_empty():
+			print("Used: ", data["name"])
+		return true
+	print("Out of:", ingredient)
+	return false
+	
+func add_ingredient(ingredient: String, amount: int = 1) -> bool:
+	# Adds ingredients to inventory
+	# Checks capacity via upgrade_manager if available
+	if not ingredient_exists(ingredient):
+		return false
+	var upgrades = _upgrades()
+	if upgrades:
+		if not upgrades.can_add_ingredient(ingredient, amount, inventory, _db().INGREDIENTS):	
+			var category = get_ingredient(ingredient)["category"]
+			print("Storage full! ", category, "is at max capacity of ",
+				upgrades.get_max_capacity(category))
+			return false
+	if inventory.has(ingredient):
+		inventory[inventory] += amount
+	else:
+		inventory[ingredient] = amount
+	var data = get_ingredient(ingredient)
+	if not data.is_empty():
+		print("Added ", amount, "x ", data["name"], " to inventory")
+	return true
 	
 	
-	#—————————— VEGETABLE CATEGORY ———————————————————————
-	"mushrooms":			{"name": "Mushroom",				"category": "vegetable", 		"rarity": "common",		"value": 8		},
-	"bamboo":				{"name": "Bamboo Shoot",			"category": "vegetable", 		"rarity": "uncommon", 	"value": 16		},
-	"daikon":				{"name": "Daikon",					"category": "vegetable", 		"rarity": "common",		"value": 6 		},
-	"herbs":				{"name": "Rare Herbs",				"category": "vegetable",		"rarity": "rare",		"value": 40		},
-	"red_ginger":			{"name": "Red Ginger",				"category": "vegetable",		"rarity": "common",		"value": 8		},
-	"young_ginger": 		{"name": "Young Ginger",			"category": "vegetable",		"rarity": "common",		"value": 8		},
-	"cucumber":				{"name": "Cucumber",				"category": "vegetable",		"rarity": "common",		"value": 5		},
-	"cabbage":				{"name": "Cabbage",					"category": "vegetable",		"rarity": "common",		"value": 5		},
-	"garlic":				{"name": "Garlic",					"category": "vegetable",		"rarity": "common",		"value": 4		},
-	"soybean":				{"name": "Soy Beans",				"category": "vegetable",		"rarity": "common",		"value": 5		},
+#══════════════════════════════════════════════════════════════════════
+#		COOKING SESSION FUNCTIONS
+#══════════════════════════════════════════════════════════════════════
+
+func start_cooking(recipe_key: String, ingredients: Array, garnishes: Array = []) -> bool:
+	# Called when player confirms recipe and ingredients
+	if not recipe_exists(recipe_key):
+		print("Recipe not found: ", recipe_key)
+		return false
+		
+	var recipe = get_recipe(recipe_key)
 	
+	current_recipe			= recipe_key
+	chosen_ingredients		= ingredients
+	chosen_garnishes		= garnishes
+	current_action_index	= 0
+	cook_quality			= 0.0
+	garnish_quality_bonus	= 0.0
 	
-	#—————————— FRUIT CATEGORY ——————————————————————————
-	"plum":					{"name": "Plum",					"category": "fruit",			"rarity": "uncommon",	"value": 12 	},
+	# Use up the ingredients from inventory
+	for ingredient in ingredients:
+		use_ingredient(ingredient)
+		
+	# Apply garnish bonuses and use garnish items
+	for garnish in garnishes:
+		use_ingredient(garnish)
+		if recipe["garnish_bonuses"].has(garnish):
+			garnish_quality_bonus += recipe["garnish_bonuses"][garnish]
+			print("Garnish bonus: +", recipe["garnish_bonuses"][garnish], "from", garnish)
+			
+	print("Starting: ", recipe["name"])
+	print("Actions: ", recipe["action_sequence"])
+	return true
+
+func get_current_action() -> String:
+	# Returns the action the player needs to perform right now
+	if current_recipe == "":
+		return ""
+	var sequence = get_recipe_action_sequence(current_recipe)
+	if current_action_index < sequence.size:
+		return sequence[current_action_index]
+	return "done"
 	
+func complete_action(quality: float) -> void:
+	# Called by gesture_manager when player completes a cooking gesture
+	# quality is 0.0 to 1.0 — how well they performed it
+	cook_quality		+= quality
+	current_action_index += 1
+	print("Action complete! Quallity: ", quality)
+	print("Next action: ", get_current_action())
 	
-	#————————————— DRY GOODS ——————————————————————————————
-	"nori":					{"name": "Nori Seaweed",			"category": "dry_goods",		"rarity": "common",		"value": 6		},
-	"dumpling_wraps":		{"name": "Dumpling Wrappers",		"category": "dry_goods",		"rarity": "common",		"value": 5		},
-	"panko":				{"name": "Panko Breadcrumb",		"category": "dry_goods",		"rarity": "common",		"value": 4		},
-	"tempura_flour":		{"name": "Tempura Flour",			"category":	"dry_goods",		"rarity": "common",		"value": 5		},
+func finish_cooking() -> Dictionary:
+	# Called when all actions done — calculates and returns the result
+	var recipe		= get_recipe(current_recipe)
+	var num_actions = recipe["action_sequence"].size()
 	
+	# Average quality across all actions plus garnish bonuses
+	var avg_quality = (cook_quality / num_actions) + garnish_quality_bonus
+	avg_quality		= clamp(avg_quality, 0.0, 10.0)
 	
-	#———————————— STAPLE CATEGORY —————————————————————————
-	"rice":					{"name": "Rice",					"category": "staple",			"rarity": "common",		"value": 4		},
-	"noodles":				{"name": "Noodles",					"category": "staple",			"rarity": "common",		"value": 6		},
-	"tofu":					{"name": "Tofu",					"category": "staple",			"rarity": "common",		"value": 8		},
-	"rice_flour":			{"name": "Rice Flour",				"category":	"staple",			"rarity": "common",		"value": 6		},
-	"black_rice":			{"name": "Black Rice",				"category": "staple",			"rarity": "uncommon",	"value": 5		},
-	
-	#—————————— SEASONING CATEGORY ———————————————————————
-	"soy":					{"name": "Soy Sauce",				"category": "seasoning",		"rarity": "common",	  	"value": 5		},
-	"miso":					{"name": "Miso",					"category": "seasoning",		"rarity": "common",	  	"value": 5		},
-	"salt":					{"name": "Salt",					"category": "seasoning",		"rarity": "common",	  	"value": 3		},
-	"rare_spice":			{"name": "Rare Spice",				"category": "seasoning",		"rarity": "exotic",	  	"value": 60		},
-	"dashi_stock":			{"name": "Dashi Stock",				"category": "seasoning",		"rarity": "uncommon",	"value": 8		},
-	"mirin":				{"name": "Mirin",					"category": "seasoning",		"rarity": "common",		"value": 8		},
-	
-	#———————————— PICKLE CATEGORY ————————————————————————————
-	"pickled_daikon": 		{"name": "Pickled Daikon", 			"category": "pickle",			"rarity": "common",		"value": 12 	},
-	"pickled_plum":   		{"name": "Pickled Plum",			"category": "pickle",			"rarity": "uncommon",	"value": 18 	},
-	"pickled_red_ginger": 	{"name": "Pickled Red Ginger", 		"category": "pickle",  			"rarity": "common",		"value": 10 	},
-	"pickled_young_ginger": {"name": "Pickled Young Ginger",	"category": "pickle", 			"rarity": "uncommon", 	"value": 16 	},
-	"pickled_cucumber":		{"name": "Crisp Pickled Cucumber", 	"category": "pickle", 			"rarity": "common",     "value": 10 	},
-	
-	#—————————— GARNISH CATEGORY ——————————————————————————
-	# Garnishes sit along side the dish rather than being cooked into it
-	# They are all optional - adding them increases quality and presentation score
-	"wasabi":				{"name": "Wasabi",					"category": "garnish",			"rarity": "uncommon",	"value": 5 	},
-	"pickled_ginger":		{"name": "Pickled Ginger",			"category": "garnish",			"rarity": "uncommon",	"value": 4	},
-	"shredded_daikon":		{"name": "Shredded Daikon",			"category":	"garnish",			"rarity": "common",		"value": 3	},
-	"spring_onion":			{"name": "Spring Onion",			"category":	"garnish",			"rarity": "common",		"value": 3	},
-	"sesame_seeds":			{"name": "Sesame Seeds",			"category":	"garnish",			"rarity": "common",		"value": 2	},
-	"edible_flowers":		{"name": "Edible Flowers",			"category":	"garnish",			"rarity": "rare",		"value": 7	},
-	
-	#—————————— ALCOHOL CATEGORY ——————————————————————————
-	"sake":					{"name": "Sake",					"category": "alcohol",			"rarity": "common",		"value": 25	},
-	"shochu":				{"name": "Shochu",					"category": "alcohol",			"rarity": "common",		"value": 20	},
-	"home_brew":			{"name": "Home Brew",				"category": "alcohol",			"rarity": "exotic",		"value": 120},
+	# Determine rating
+	var rating = ""
+	if avg_quality >= 0.9:
+		rating = "perfect"
+	elif avg_quality >= 0.7:
+		rating = "good"
+	elif avg_quality >= 0.4:
+		rating = "undercooked"
+	else:
+		rating = "burned"
+		
+	# Calculate final price based on rating
+	var final_price = calculate_dish_value(current_recipe, chosen_ingredients)
+	match rating:
+		"perfect":			final_price = int(final_price * 1.5)
+		"good":				final_price = int(final_price * 1.0)
+		"undercooked":  	final_price = int(final_price * 0.6)
+		"burned":			final_price = 0
+		
+	var result = {
+		"recipe":			current_recipe,
+		"rating":			rating,
+		"quality":			avg_quality,
+		"final_price":		final_price,
+		"ingredients":		chosen_ingredients,
+		"garnishes":		chosen_garnishes,
+		
 	}
+	
+	print("=== COOKING RESULT ===")
+	print("Dish:	", recipe["name"])
+	print("Rating:	", rating)
+	print("Quality:	", avg_quality)
+	print("Value:	", final_price, "coins")
+	
+	# Reset session ready for next dish
+	current_recipe			= ""
+	chosen_ingredients		= []
+	chosen_garnishes		= []
+	current_action_index	= 0
+	cook_quality			= 0.0
+	garnish_quality_bonus	= 0.0
+	
+	return result
+	
+func calculate_dish_value(recipe_key: String, ingredients: Array) -> int:
+	# Calculate final sell price based on ingredients used
+	var recipe = get_recipe(recipe_key)
+	if recipe.is_empty():
+		return 0
+	var base = recipe["base_price"]
+	var bonus = 1.0
+	for ingredient in ingredients:
+		var data = get_ingredient(ingredient)
+		if not data.is_empty():
+			match data["rarity"]:
+				"rare":		bonus += 0.3
+				"exotic":	bonus = recipe["exotic_bonus"]
+	return int(base * bonus)
+	
+	
+##══════════════════════════════════════════════════════════════════════
+#		DEBUG HELPERS
+##══════════════════════════════════════════════════════════════════════
 
-
-#═════════════════════════════════════════
-#	RECIPE DEFINITIONS
-#═════════════════════════════════════════
-
-const RECIPES = {
+func print_recipe_info(recipe_key: String) -> void:
+	var r = get_recipe(recipe_key)
+	if r.is_empty():
+		print("Recipe not found: ", recipe_key)
+		return
+	print("=== ", r["name"], "===")
+	print("Description: ", r["description"])
+	print("Actions:		", ["action_sequence"])
+	print("Base price: ", r["base_price"], "coins")
+	print("Cook time:	", r["cook_time"], "seconds")
 	
-	#———————————— YAKITORI —————————————————
-	"yakitori": {
-		"name": "Yakitori",
-		"description": "Grilled skewered meat - a izakaya classic",
-		"ingredient_slots": [
-			{ "category": "meat", "quantity": 3, "optional": false },
-			{"category": "garnish",	  "quantity": 1, "optional": true },
-		],
-		"action_sequence": ["chop", "skewer", "bbq", "plate"],
-		"base_price":		120,
-		"cook_time":		8.0,
-		"exotic_bonus":		1.5,
-		"garnish_bonuses":	{},
-	},
-	
-	#————————————— MISO SOUP —————————————————
-	"miso_soup": {
-		"name":				"Miso Soup",
-		"description":		"Simple but comforting - Kurou makes it every morning",
-		"ingredient_slots": [
-			{ "category": "seasoning", "quantity": 1, "optional": false },
-			{"category": "vegetable",	"quantity": 1,	"optional": false},
-			{"category": "garnish",	  "quantity": 1, "optional": true },
-		],
-		"action_sequence": ["chop", "stir", "plate"],
-		"base_price":		60,
-		"cook_time":		5.0,
-		"exotic_bonus":		1.3,
-		"garnish_bonuses":{
-			"spring_onion": 0.1,
-			"sesame_seeds": 0.1,
-		}
-	},
-	
-	#————————————— TEMPURA ———————————————————————
-	"tempura": {
-		"name":				"Tempura",
-		"description":		"Light crispy battered seafood or vegetable ",
-		"ingredient_slots": [
-			{"category": "seafood",	"quantity": 1, "optional": false },
-			{"category": "vegetable", "quantity": 2, "optional": false },
-			{"category": "dry_goods", "quantity": 1, "specific": "tempura_flour", "optional": false},
-			{"category": "garnish",	  "quantity": 1, "optional": true },
-		],
-		"action_sequence": ["chop", "stir", "flip", "plate"],
-		"base_price":		150,
-		"cook_time":		7.0,
-		"exotic_bonus":		1.8,
-		"garnish_bonuses": {
-			"spring_onion":	150,
-			"sesame_seeds":	0.1,
-			"ediblie_flowers":	0.25,
-		},
-	},
-	
-	#—————————————— SASHIMI ——————————————————————
-	"sashimi": {
-		"name":				"Sashimi",
-		"description":		"Raw sliced fish served with the kick of wasabi and salty delicious soy sauce",
-		"ingredient_slots": [
-			{"category": "seafood",			"quantity": 2,									"optional": false	},
-			{"category": "seasoning",		"quantity": 1, 	"specific": "soy", 				"optional": false	},
-			{"category": "garnish",			"quantity": 1, 	"specific": "wasabi", 			"optional": false	},
-			{"category": "garnish",			"quantity": 1,	"specific": "shredded_daikon",	"optional": true	},
-			{"category": "garnish",			"quantity": 1,	"specific": "pickled_ginger",	"optional": true	},
-			{"category": "garnish",			"quantity": 1,	"specific": "sesame_seeds",		"optional": true	},
-			{"category": "garnish",			"quantity": 1,	"specific": "spring_onion",		"optional": true	},
-			{"category": "garnish",	 		"quantity": 1, 	"specific": "edible_flowers",	"optional": true	},
-		],
-		"action_sequence": ["slice", "slice", "slice", "grind", "plate", "place", "sprinkle", "sprinkle", "sprinkle"],
-		"base_price":		180,
-		"cook_time":		6.0,
-		"exotic_bonus":		2.0,
-		"garnish_bonuses": {
-			"shredded_daikon": 0.1,
-			"pickled_ginger":  0.15,
-			"sesame_seeds":	   0.1,
-			"spring_onion":	   0.1,
-			"edible_flowers":  0.4,
-		},
-	},
-	
-	#———————————— KARAAGE ————————————————————————
-	"karaage": {
-		"name":			"Karaage",
-		"description": "Japanese fried chicken - Crispy outside, juiciy inside",
-		"ingredient_slots": [
-			{"category": "meat",		"quantity": 2, "specific": "chicken",	"optional": false},
-			{"category": "seasoning",	"quantity": 1, 							"optional": false},
-			{"category": "dry_goods",	"quantity": 1, "specific": "panko",		"optional": false},
-			{"category": "garnish",		"quantity": 1, 							"optional": true},
-		],
-		"action_sequence": ["chop", "stir", "smash", "flip", "plate"],
-		"base_price":	140,
-		"cook_time":	9.0,
-		"exotic_bonus": 1.6,
-		"garnish_bonuses": {
-			"spring_onion": 0.1,
-			"sesame_seeds": 0.1,
-			"edible_flowers": 0.25,
-		}
-	},
-	
-	#———————————— TSUKEMONO ——————————————————————
-	#Note: requires pickles prepared in advanced via pickle_manager.gd
-	"tsukemono": {
-		"name":			"Tsukemono",
-		"description":  "A selection of Japanese pickled vegetables — sharp, tangy and refreshing",
-		"ingredient_slots":[
-			# Player picks any 3 pickles from their prepared stock
-			{"category": "pickle", "quantity": 3, "optional": false},
-			# Optional Garnish
-			{"category": "garnish", "quantity": 1, "opitonal": true},
-		],
-		"action_sequence": ["place", "place", "place", "plate"],
-		"base_price":		80,
-		"cook_time":		2.0,
-		"exotic_bonus":		1.4,
-		"garnish_bonuses":{
-			"edible_flowers": 0.3,
-			"sesame_seeds": 0.1,
-			"spring_onion": 0.1,
-		}
-	},
-
-	#———————————— EDAMAME —————————————————————————
-	"edamame": {
-		"name":			"Edamame",
-		"description": "Salted boiled soy beans — the perfect bar snack while you wait",
-		"ingredient_slots": [
-			{"category": "vegetable", "quantity": 1, "specific": "soybean", "optional": false },
-			{"category": "seasoning", "quantity": 1, "specific": "salt", "optional": false },	
-		],
-		"action_sequence": ["stir", "sprinkle", "plate"],
-		"base_price":	40,
-		"cook_time":	3.0,
-		"exotic_bonus":	1.0,
-		"garnish_bonuses": {},
-	},
-	
-	#———————————— AGEDASHI TOFU ———————————————————
-	"agedashi_tafu": {
-		"name":			"Agedashi Tofu",
-		"description": "Crispy fried tofu in a light dashi broth — silky inside, golden outside",
-		"ingredient_slots": [
-			{"category": "staple",	"quantity": 1, "specific": "tofu",			"optional": false },
-			{"category": "staple",	"quantity": 1, "specific": "rice_flour",	"optional": false },
-			{"category": "seasoning",	"quantity": 1, "specific": "dashi_stock",	"optional": false },
-			{"category": "seasoning",	"quantity": 1, "specific": "soy",			"optional": false },
-			{"category": "seasoning",	"quantity": 1, "specific": "mirin",			"optional": false },
-			{"category": "garnish", "quantity": 1,	"optional": true },
-		],
-		"action_sequence": ["chop", "stir", "flip", "stir", "plate"],
-		"base_price":		130,
-		"cook_time":		8.0,
-		"exotic_bonus":	1.5,
-		"garnish_bonuses": {
-			"spring_onion":	0.1,
-			"sesame_seeds": 0.1,
-			"shredded_daikon": 0.15,
-			"edible_flowers": 0.3,
-		},
-	},
-	
-	#———————————— GYOZA ———————————————————————————
-	"gyoza": {
-		"name":			"Gyoza",
-		"description": "Crispy pan fried dumplings — golden on the outside, juicy on the inside",
-		"ingredient_slots": [
-			{"category": "dry_goods",	"quantity": 1, "specific": "dumpling_wraps", "optional": false },
-			{"category": "meat",		"quantity": 1,								 "optional": false },
-			{ "category": "vegetable",  "quantity": 1, "specific": "cabbage",        "optional": false },
-		{ "category": "vegetable",  "quantity": 1, "specific": "garlic",         "optional": false },
-		{ "category": "seasoning",  "quantity": 1, "specific": "soy",            "optional": false },
-		{ "category": "garnish",    "quantity": 1,                               "optional": true  },
-	],
-	"action_sequence": ["chop", "stir", "place", "smash", "stir", "flip", "plate"],
-	"base_price":   140,
-	"cook_time":    10.0,
-	"exotic_bonus": 1.6,
-	"garnish_bonuses": {
-		"spring_onion":  0.1,
-		"sesame_seeds":  0.1,
-		"edible_flowers": 0.25,
-		},
-	},
-	
-	#———— SUSHI — MAKI ROLL —————————
-	"maki_roll": {
-		"name":		"Maki Roll",
-		"description": "Rice and filling rolled in nori — you decide what goes inside",
-		"ingredient_slots": [
-			{"category": "staple",				"quantity": 1,		"specific": "rice",			"optional": false	},
-			{"category": "dry_goods",			"quantity": 1,		"specific": "nori",			"optional": false	},
-			{"category": "any",					"quantity": 2,									"optional": false	},
-			{"category": "seasoning",			"quantity": 1,									"optional": true	},
-			{"category": "garnish",				"quantity": 1,									"optional": true	},
-		],
-	"action_sequence": ["stir", "place", "spread", "place", "roll", "slice", "plate"],
-	"base_price":		160,
-	"cook_time":		9.0,
-	"exotic_bonus":		2.0,
-	"garnish_bonuses": {
-		"sesame_seeds":	0.15,
-		"spring_onion": 0.1,
-		"edible_flowers": 0.35,
-		"wasabi": 0.1,
-		"pickled_ginger": 0.1,
-	},
-},	
-	#———— SUSHI — NIGIRI —————————
-	"nigiri": {
-		"name":		"Nigiri",
-		"description": "Hand shaped rice with your choice of topping — simple but reqires precision",
-		"ingredient_slots:":[
-			{"category": "staple",				"quantity": 1,		"specific": "rice",			"optional": false },
-			{"category": "any",					"quantity": 1,									"optional": false },
-			{"category": "seasoning",			"quantity": 1,									"optional": true  },
-			{"category": "garnish",				"quantity": 1,									"optional": true  },
-		],
-		"action_sequence": ["stir", "smash", "slice", "place", "plate"],
-		"base_price":		170,
-		"cook_time":		7.0,
-		"exotic_bonus":		2.2,
-		"garnish_bonuses": {
-			"wasabi":		0.15,
-			"pickled_ginger": 0.1,
-			"sesame_seeds": 0.1,
-			"edible_flowers": 0.35,
-			"shredded_daikon": 0.1, 
-		},
-	},
-}	
+func print_inventory() -> void:
+	print("=== INVENTORY ===")
+	for item in inventory:
+		if inventory[item] > 0:
+			var data = get_ingredient(item)
+			if not data.is_empty():
+				print(data["name"], ": ", inventory[item])
