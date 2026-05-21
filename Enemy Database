@@ -1,0 +1,63 @@
+extends Node
+
+# ════════════════════════════════════════════════════════════════════
+# ENEMY DATABASE
+# Pure data — no fnctions, no logic
+# All enemy definitions for Swords, Sake & Side Hustle
+# Enemies drawin from Japanese oni folklore and mythology
+# Reference by enemy_manager.gd and combat systems
+#
+# ENEMY CATEGORIES:
+# — elemental	: fire, water, earth. metal, wind oni
+#				 each upgrades a specific kitchen appliance
+# - weather		: storm, thunder, ice, lightning oni
+# - shadow		: darkness, void, hidden oni
+# - underworld	: death, hell, undead oni
+# - sea			: ocean, river, water beast oni
+# - nature		: mountain, forest, beast oni
+# - warrior		: legendary named oni - boss tier
+# - spirit		: curse, ghost, spirit oni
+# - drunk_patron: rowdy izakaya customers — comedy tier
+#═══════════════════════════════════════════════════════
+
+#═══════════════════════════════════════════════════════
+#	KITCHEN APPLIANCE UPGRADE MAP
+# 	Which elemental oni upgrades which appliance
+#	Tiers 1-3: Awakened, Empowered, Mastered
+#═══════════════════════════════════════════════════════
+
+const ELEMENTAL_APPLIANCE_MAP = {
+	"kaki": {
+		"appliance":		"stove",
+		"description":		"kaki's fire upgrades the Stove — faster cook times and fire char quality bonus",
+		
+	},
+	"suiki": {
+		"appliance":		"cooking_pot",
+		"description":		"Suiki's water upgrades the Cooking Pot — richer broths and better stir accuracy",
+	},
+	"doki": {
+		"appliance":		"Doki's earth upgrades the Oven — even heat distribution and baking recipes unlocked ",
+	},
+	"kinki": {
+		"appliance":		"brewing_still",
+		"description":		"Kinki's metal upgrades the Brewing Still — faster fermentation and exotic blends unlocked",
+	},
+	"fuukie": {
+		"appliance":		"smoker",
+		"description":		"Fuuki's wind upgrades the Smoker — airflow control, smoke depth bonus and smoked recipes unlocked",
+	},
+	"numaki": {
+		"appliance":		"fermenter",
+		"description":		"Numaki's swamp water upgrades the Fermenter — ancient bog patience feepens fermentation rare brines and ancient bog picklle unlocked",
+	},
+}
+
+#═══════════════════════════════════════════════════════
+#	DIFFICULTY TIERS
+#	common	 	:	found in The Wilds — early game
+#	uncommon 	:	found deeper in The Wilds
+#	rare		:	found near ruins and Mazo—Yokao rifts
+#	elite		:	mini_boss level, guards rare areas
+#	boss		:	major story encounters 
+#═══════════════════════════════════════════════════════
