@@ -74,7 +74,7 @@ var current_recipe:				String = ""
 var chosen_ingredients:			Array = []
 var chosen_garnishes:			Array = []
 var current_action_index:		int   = 0
-var xook_quality:				float = 0.0
+var cook_quality:				float = 0.0
 var garnish_quality_bonus:		float = 0.0
 
 
@@ -160,7 +160,7 @@ func has_ingredient(ingredient: String) -> bool:
 func use_ingredient(ingredient: String) -> bool:
 	# Removes 1 of an ingredient from inventory when cooking
 	if has_ingredient(ingredient):
-		inventory[inventory] -= 1
+		inventory[ingredient] -= 1
 		var data = get_ingredient(ingredient)
 		if not data.is_empty():
 			print("Used: ", data["name"])
@@ -181,7 +181,7 @@ func add_ingredient(ingredient: String, amount: int = 1) -> bool:
 				upgrades.get_max_capacity(category))
 			return false
 	if inventory.has(ingredient):
-		inventory[inventory] += amount
+		inventory[ingredient] += amount
 	else:
 		inventory[ingredient] = amount
 	var data = get_ingredient(ingredient)
@@ -229,7 +229,7 @@ func get_current_action() -> String:
 	if current_recipe == "":
 		return ""
 	var sequence = get_recipe_action_sequence(current_recipe)
-	if current_action_index < sequence.size:
+	if current_action_index < sequence.size():
 		return sequence[current_action_index]
 	return "done"
 	
@@ -248,7 +248,7 @@ func finish_cooking() -> Dictionary:
 	
 	# Average quality across all actions plus garnish bonuses
 	var avg_quality = (cook_quality / num_actions) + garnish_quality_bonus
-	avg_quality		= clamp(avg_quality, 0.0, 10.0)
+	avg_quality		= clamp(avg_quality, 0.0, 1.0)
 	
 	# Determine rating
 	var rating = ""
@@ -322,7 +322,7 @@ func print_recipe_info(recipe_key: String) -> void:
 		return
 	print("=== ", r["name"], "===")
 	print("Description: ", r["description"])
-	print("Actions:		", ["action_sequence"])
+	print("Actions:		", r["action_sequence"])
 	print("Base price: ", r["base_price"], "coins")
 	print("Cook time:	", r["cook_time"], "seconds")
 	
