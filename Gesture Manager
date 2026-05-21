@@ -1,0 +1,73 @@
+extends Node
+
+#══════════════════════════════════════════════════════════════════════
+#		GESTURE MANAGER
+#══════════════════════════════════════════════════════════════════════
+
+# Chop detection state
+var chop_stroke_count:		int		= 0
+var chop_last_direction:	String	= ""
+var chop_active:			bool	= false
+var chop_min_strokes:		int		= 3
+var chop_max_speed:			float	= 800.0
+var chop_min_speed:			float	= 100.0
+
+
+func _ready() -> void:
+	print("GestureManager ready")
+	
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.pressed:
+			print("Mouse DOWN at: ", event.position)
+		else:
+			print("Mouse UP at: ", event.position)
+			
+	if event is InputEventMouseMotion:
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			var direction = _get_drag_direction(event.velocity)
+			print("Dragging - direction: ", direction, "speed: ", event.velocity.length)
+			_detect_chop(event.velocity)
+
+func _get_drag_direction(velocity: Vector2) -> String:
+	if velocity.length() < 10.0:
+		return "too_slow"
+	var angle = rad_to_deg(atan2(velocity.y, velocity.x))
+	if angle > -135 and angle < -45:
+		return "up"
+	elif angle > 45 and angle < 135:
+		return "down"
+	elif angle > -45 and angle <45:
+		return "right"
+	else:
+		return "left"
+
+
+#══════════════════════════════════════════════════════════════════════
+#			CHOP DETECTION
+#══════════════════════════════════════════════════════════════════════
+func _detect_chop(velocity: Vector2) -> void:
+	var direction = _get_drag_direction(velocity)
+	var speed	  = velocity.length()
+	
+	# Ignore if too slow or too fast
+	if speed < chop_min_speed:
+		return
+	if speed > chop_max_speed:
+		print("Too fast - that's a smash not a chop!")
+		return
+	
+	# Count direction changs - down then up = 1 stroke
+	if direction == "down" and chop_last_direction == "up":
+		chop_stroke_count += 1
+		print("Chop stroke! Count: ", chop_stroke_count, "/", chop_min_strokes)
+	elif direction == "up" and chop_last_direction == "down":
+		chop_stroke_count += 1
+		print("Chop stroke! Count: ", chop_stroke_count, "/", chop_min_strokes)
+	chop_last_direction = direction
+
+	# Count if complete
+	if chop_stroke_count >= chop_min_strokes:
+		print("=== CHOP COMPLETE! ===")
+		chop_stroke_count		= 0
+		chop_last_direction		= ""
