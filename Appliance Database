@@ -1,0 +1,283 @@
+extends Node
+
+#═══════════════════════════════════════════════════════════════
+#		APPLIANCE DATABASE
+#		Pure data - no functions, no logic
+#		All kitchen appliance definitions and tier data
+#		Reference by upgrade_manager.gd
+
+#		APPLIANCE → ONI MAP:
+#		stove			← kaki 		(Fire Oni)
+#		cooking_pot		← suiki		(Water Oni)
+#		oven			← doki		(Earth Oni)
+#		brewing_still	← kinki		(Metal Oni)
+#		fermenter		← numaki	(Swamp Water Oni)
+#		smoker			← fuuki		(Wind Oni)
+#═══════════════════════════════════════════════════════════════
+#═══════════════════════════════════════════════════════════════
+#	KITCHEN APPLIANCES
+#	Each appliance is upgraded by a specific elemental oni
+#	Appliances have 3 tiers - Awakened, Empowered, Mastered
+#═══════════════════════════════════════════════════════════════
+const APPLIANCES = {
+	
+	#—————————————————————————————————————————————————————————————
+	#					STOVE — Kaki (Fire Oni)
+	#—————————————————————————————————————————————————————————————
+	"stove": {
+	"name":			"Stove",
+	"oni":				"kaki",
+	"element":			"fire",
+	"description": "Used for grilling, frying and BBQ dishes",
+	"tiers": {
+		0: {
+			"name":				"Basic Stove",
+			"description":		"Standard stove — no oni assigned",
+			"cook_time_bonus":	0.0,
+			"quality_bonus":	0.0,
+			"bbq_window_bonus":	0.0,
+			"unlocks":			[],
+		},
+			1: {
+				"name":				"Awakened Stove",
+				"description":		"Kaki stirs within the flame — heat is more responsive",
+				"cook_time_bonus":	0.15,
+				"quality_bonus":	0.1,
+				"bbq_window_bonus": 0.1,
+				"unlocks":			["fire_char_bonus"],
+			},
+			2: {
+				"name":				"Empowered Stove",
+				"description":			"Kaki has settled in — the flame never dies and never burns too hot",
+				"cook_time_bonus":		0.3,
+				"quality_bonus":		0.2,
+				"bbq_window_bonus":		0.25,
+				"unlocks":				["fire_char_bonus", "perfect_grill_chance"],
+			},
+			3: {
+				"name":					"Mastered Stove",
+				"description":			"Kaki is fully bonded — the stove responds to Kurou's intent",
+				"cook_time_bonus":		0.5,
+				"quality_bonus":		0.35,
+				"bbq_window_bonus":		0.4,
+				"unlocks":				["fire_char_bonus", "perfect_grill_chance", "demon_flame_dish"]
+			},
+		},
+	},
+	#—————————————————————————————————————————————————————————————
+	#					COOKING POT —— Suiki (Water Oni)
+	#—————————————————————————————————————————————————————————————
+	"cooking_pot": {
+		"name":				"Cooking Pot",
+		"oni":				"suiki",
+		"element":			"water",
+		"description":		"Used for soups, broths, stews and boiled dishes",
+		"tiers": {
+			0: {
+				"name":					"Basic Cooking Pot",
+				"description":			"Standard pot — no oni assigned",
+				"cook_time_bonus":		0.0,
+				"quality_bonus":		0.0,
+				"stir_accuracy":		0.0,
+				"unlocks":				[],
+			},
+			1: {
+				"name":					"Awakened Cooking Pot",
+				"description":			"Suiki flows within the pot — broth develops richer flavour",
+				"cook_time_bonus":		0.1,
+				"quality_bonus":		0.15,
+				"stir_accuracy":		0.1,
+				"unlocks":				["rich_broth_bonus"],
+			},
+			2: {
+				"name":					"Empowered Cooking Pot",
+				"description":			"Suiki has settled in — the pot maintains perfect temperature",
+				"cook_time_bonus":		0.2,
+				"quality_bonus":		0.25,
+				"stir_accuracy":		0.25,
+				"unlocks":				["rich_broth_bonus", "soup_quality_boost"],
+			},
+			3: {
+				"name":					"Mastered Cooking Pot",
+				"description":			"Suiki is fully bonded — every dish cooked in this pot carries a hint of the sea",
+				"cook_time_bonus":		0.4,
+				"quality_bonus":		0.4,
+				"stir_accuracy":		0.4,
+				"unlocks":				["rich_broth_bonus", "soup_quality_boost", "ocean_depth_dish"],
+				},
+			},
+		},
+	#—————————————————————————————————————————————————————————————
+	#					OVEN —— Doki (Earth Oni)
+	#—————————————————————————————————————————————————————————————
+		"oven": {
+			"name":			"Oven",
+			"oni":			"doki",
+			"element":		"earth",
+			"description": "Used for baking, roasting and slow cooking dishes",
+			"tiers": {
+				0: {
+					"name":					"Basic Oven",
+					"description":			"Standard oven — no oni assigned",
+					"cook_time_bonus":		0.0,
+					"quality_bonus":		0.0,
+					"heat_distribution":	0.0,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Oven",
+					"description":			"Doki rumbles within the earth below — heat spreads evenly through the oven",
+					"cook_time_bonus":		0.1,
+					"quality_bonus":		0.1,
+					"heat_distribution":	0.2,
+					"unlocks":				["even_heat_bonus", "baking_recipes"],
+				},
+				2: {
+					"name":					"Empowered Oven",
+					"description":			"Doki has settled in — the oven can reach temperatures no normal fire could achieve",
+					"cook_time_bonus":		0.25,
+					"quality_bonus":		0.2,
+					"heat_distribution":	0.4,
+					"unlocks":				["even_heat_bonus", "baking_recipes", "roast_quality_boost"],
+				},
+				3: {
+					"name":					"Mastered Oven",
+					"description":			"Doki is fully bonded — dishes cooked here carry the warmth of the earth itself",
+					"cook_time_bonus":		0.4,
+					"quality_bonus":		0.35,
+					"heat_distribution":	0.6,
+					"unlocks":				["even_heat_bonus", "baking_recipes", "roast_quality_boost", "earth_blessed_dish"],
+				},
+			},
+		},
+	#—————————————————————————————————————————————————————————————
+	#				BREWING STILL —— Kinki (Metal Oni)
+	#—————————————————————————————————————————————————————————————
+		"brewing_still": {
+			"name":				"Brewing Still",
+			"oni":				"kinki",
+			"element":			"metal",
+			"description":		"Used for distilling and brewing custom alcohol blends",
+			"tiers": {
+				0: {
+					"name":					"Basic Brewing Still",
+					"description":			"Standard Still — no oni assigned",
+					"brew_time_bonus":		0.0,
+					"quality_bonus":		0.0,
+					"exotic_blend":			false,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Brewing Still",
+					"description":			"Kinki's iron skin lines the still — fermtation becomes more efficient",
+					"brew_time_bonus":		0.2,
+					"quality_bonus":		0.1,
+					"exotic_blend":			false,
+					"unlocks":				["faster_ferment", "brew_quality_boost"],
+				},
+				2: {
+					"name":					"Empowered Brewing Still",
+					"description":			"Kinki has settled in — the still can now handle exotic ingredients without losing flavour",
+					"brew_time_bonus":		0.35,
+					"quality_bonus":		0.25,
+					"exotic_blend":			true,
+					"unlocks":				["faster_ferment", "brew_quality_boost", "exotic_brew_slots"],
+				},
+				3: {
+					"name":					"Mastered Brewing Still",
+					"description":			"Kinki is fully bonded — brews produced here are literally indestructible in quality",
+					"brew_time_bonus":		0.5,
+					"quality_bonus":		0.4,
+					"exotic_blend":			true,
+					"unlocks":				["faster_ferment", "brew_quality_boost", "exotic_brew_slots", "iron_brew_legendary"],
+				},
+			},
+		},
+	#—————————————————————————————————————————————————————————————
+	#				FERMENTER —— Numaki (Swamp Water Oni
+	#—————————————————————————————————————————————————————————————
+		"fermenter": {
+			"name":			"Fermenter",
+			"oni":			"numaki",
+			"element":		"swamp_water",
+			"description":	"Used for pickling and fermenting ingredients over time",
+			"tiers": {
+				0: {
+					"name":					"Basic Fermenter",
+					"despcription":			"Standard Fermenter — no oni assigned",
+					"pickle_time_bonus":	0.0,
+					"quality_bonus":		0.0,
+					"rare_brines":			false,
+					"unlocks":				[],
+				},
+				1: {
+					"name":					"Awakened Fermenter",
+					"description":			"Numaki's ancient bog patience seeps into the fermenter — fermentation on deepens naturally",
+					"pickle_time_bonus":	0.2,
+					"quality_bonus":		0.1,
+					"rare_brines":			false,
+					"unlocks":				["faster_pickle", "pickle_quality_boost"],
+				},
+				2: {
+					"name":					"Empowered Fermenter",
+					"description":			"Numaki'has settled in — rare brine types emerge from its ancient swamp knowledge",
+					"pickle_time_bonus":	0.35,
+					"quality_bonus":		0.2,
+					"rare_brines":			true,
+					"unlocks":				["faster_pickle", "pickle_quality_boost", "rare_brine_types"],
+				},
+				3: {
+					"name":					"Mastered Fermenter",
+					"description":			"Numaki is fully bonded — pickles carry a subtle ancient depth that nobody can explain bu everyone notices",
+					"pickle_time_bonus":	0.5,
+					"quality_bonus":		0.35,
+					"rare_brines":			true,
+					"unlocks":				["faster_pickle", "pickle_quality_boost", "rare_brine_types", "ancient_bog_pickle"],
+				},
+			},
+		},
+
+		#—————————————————————————————————————————————————————————————
+		#					SMOKER — Fuuki (Wind Oni)
+		#—————————————————————————————————————————————————————————————
+		"smoker": {
+			"name":				"Smoker",
+			"oni":				"fuuki",
+			"element":			"wind",
+			"description":		"Used for smoking meats, fish and vegetables — adds deep smokey flavour profiles",
+			"tiers": {
+				0: {
+					"name":				"Basic Smoker",
+					"description":		"Standard smoker — no oni assigned",
+					"smoke_time_bonus": 0.0,
+					"quality_bonus":	0.0,
+					"smoke_depth":		0.0,
+					"unlocks":			[],
+				},
+				1: {
+					"name":				"Awakened Smoker",
+					"description":		"Fuuki's invisible wind circulates through the smoker — heat distributes perfectly",
+					"smoke_time_bonus": 	0.2,
+					"quality_bonus":		0.1,
+					"smoke_depth":			0.2,
+					"unlocks":			["smoke_flavour_bonus", "smoke_recipes"],
+				},
+				2: {
+					"name":				"Empowered Smoker",
+					"description":		"Fuuki has settled in — the smoke carries an invisible edge that customers cannot place",
+					"smoke_time_bonus":		0.35,
+					"quality_bonus":		0.25,
+					"smoke_depth":			0.4,
+					"unlocks":			["smoke_flavour_bonus", "smoked_recipes", "rare_wood_smoke"],
+				},
+				3: {
+					"name":				"Mastered Smoker",
+					"description":		"Fuuki is fully bonded — the smoke itself becomes invisible, leaving only flavour",
+					"smoke_time_bonus":		0.5,
+					"quality_bonus":		0.4,
+					"smoke_depth":			0.6,
+					"unlocks":			["smoke_flavour_bonus", "smoked_recipes", "rare_wood_smoke", "wind_kissed_smoke"],
+				},
+			},
+		},
+}
