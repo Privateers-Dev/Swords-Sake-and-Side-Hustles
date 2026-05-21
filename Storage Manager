@@ -1,0 +1,146 @@
+extends Node
+
+#═══════════════════════════════════════════════════════════════
+#	STORAGE MANAGER
+#	Handles all inventory storage capacity —
+#	base limits, coin upgrades and capacity checks
+#	Called by recipe_manager.gd when adding ingredients
+#═══════════════════════════════════════════════════════════════
+
+#═══════════════════════════════════════════════════════════════
+#	BASE CAPACITY PER CATEGORY
+#	Starting maximum storage for each ingredient category
+#═══════════════════════════════════════════════════════════════
+
+var BASE_CAPACITY = {
+	"meat":				15,
+	"seafood":			15,
+	"vegetable":		25,
+	"fruit":			15,
+	"staple":			40,
+	"seasoning":		30,
+	"dry_goods":		25,
+	"pickle":			10,
+	"garnish":			20,
+	"alcohol":			20,
+}
+#═══════════════════════════════════════════════════════════════
+#	STORAGE UPGRADE LEVELS
+#	How many coin upgrades have been applied per category
+#═══════════════════════════════════════════════════════════════
+var storage_upgrades = {
+	"meat":			0,
+	"seafood":		0,
+	"vegetable":	0,
+	"fruit":		0,
+	"staple":		0,
+	"seasoning":	0,
+	"dry_goods":	0,
+	"pickle":		0,
+	"garnish":		0,
+	"alcohol":		0,
+}
+
+# How much each upgrade level adds to capacity
+const UPGRADE_BONUS = 10
+
+# Max upgrade level per category
+const MAX_UPGRADE_LEVEL = 5
+
+# Coin cost per upgrade level
+const UPGRADE_COSTS = {
+	1: 200,
+	2: 400,
+	3: 800,
+	4: 1500,
+	5: 3000,
+}
+
+#═══════════════════════════════════════════════════════════════
+#					CAPACITY FUNCTIONS
+#═══════════════════════════════════════════════════════════════
+	
+func get_max_capacity(category: String) -> int:
+	if not BASE_CAPACITY.has(category):
+		return 99
+	return BASE_CAPACITY[category] + (storage_upgrades[category] * UPGRADE_BONUS)
+	
+func can_add_ingredient(ingredient: String, amount: int, inventory: Dictionary, ingredients: Dictionary) -> bool:
+	if not ingredients.has(ingredient):
+		return false
+	var category = ingredients[ingredient]["category"]
+	var current = get_category_total(category, inventory, ingredients)
+	return current + amount <= get_max_capacity(category)
+	
+func get_category_total(category: String, inventory: Dictionary, ingredients: Dictionary) -> int:
+	var total = 0
+	for item in inventory:
+		if ingredients.has(item) and ingredients[item]["category"] == category:
+			total += inventory[item]
+	return total
+	
+func get_category_space_remaining(category: String, inventory: Dictionary, ingredients: Dictionary) -> int:
+	return get_max_capacity(category) - get_category_total(category, inventory, ingredients)
+	
+func is_category_full(category: String, inventory: Dictionary, ingredients: Dictionary) -> bool:
+	return get_category_space_remaining(category, inventory, ingredients) <= 0
+
+		
+#═══════════════════════════════════════════════════════════════
+#	COIN UPGRADE FUNCTIONS
+#═══════════════════════════════════════════════════════════════
+
+func can_upgrade_storage(category: String) -> bool:
+	# Returns true if this category can still be coin upgraded
+	if not storage_upgrades.has(category):
+		return false
+	return storage_upgrades[category] < MAX_UPGRADE_LEVEL
+	
+func get_upgrade_cost(category: String) -> int:
+	# Returns the coin cost for the next upgrade level
+	if not can_upgrade_storage (category):
+		return 0
+	var next_level = storage_upgrades[category] + 1
+	return UPGRADE_COSTS[next_level]
+	
+func upgrade_storage(category: String, player_coins: int) -> Dictionary:
+	if not storage_upgrades.has(category):
+		return {"success": false, "coins_remaining": player_coins, "message": "Unknown category: " + category}
+	if not can_upgrade_storage(category):
+		return {"success": false, "coins_remaining": player_coins, "message": category + "is already at max level"}
+	var cost = get_upgrade_cost(category)
+	if player_coins < cost:
+		return {"success": false, "coins_remaining": player_coins, "message": "Need " + str(cost) + "coins"}
+	storage_upgrades[category] += 1
+	return {
+		"success":			true,
+		"coins_remaining":	player_coins - cost,
+		"message":			category + "storage upgraded to " + str(get_max_capacity(category)),
+	}	
+	
+	#═══════════════════════════════════════════════════════════════
+	#		ONI CAPACITY BONUS
+	#		Called by upgrade_manager when a demon is assigned
+	#		Applies a permanent bonus directly to BASE_CAPACITY
+	#═══════════════════════════════════════════════════════════════
+	
+func apply_oni_capacity_bonus(category: String, bonus: int) -> void:
+	# Permanently increases base capacity for a category
+	# This stacks on top of coin upgrades
+	if BASE_CAPACITY.has(category):
+		BASE_CAPACITY[category] += bonus
+		print("Storage bonus applied — ", category, " base capacity now: ", BASE_CAPACITY[category])
+		
+		#═══════════════════════════════════════════════════════════════
+		#		DEBUG HELPERS
+		#═══════════════════════════════════════════════════════════════
+		
+func print_storage_status(inventory: Dictionary, ingredients: Dictionary) -> void:
+	print("=== STORAGE STATUS ===")
+	for category in BASE_CAPACITY.keys():
+		var current 	= get_category_total(category, inventory, ingredients)
+		var maximum 	= get_max_capacity(category)
+		var level 		= storage_upgrades[category]
+		var cost		= get_upgrade_cost(category)
+		var cost_str	= str(cost) + " coins" if cost > 0 else "MAX"
+		print(category, ": ", current, "/", maximum, " level ", level, "/", MAX_UPGRADE_LEVEL, " next upgrade: ", cost_str)
