@@ -1,0 +1,217 @@
+extends Node
+
+#═══════════════════════════════════════════════════════════════
+#	UPGRADE MANAGER
+#	Handles oni capture and kitchen appliance upgrades
+#	Data lives in appliance_database
+#	Storage capacity lives in storage_manager
+#	This file is the coordinator - pure logic
+#═══════════════════════════════════════════════════════════════
+#═══════════════════════════════════════════════════════════════
+#		MANAGER REFERNCES
+#═══════════════════════════════════════════════════════════════
+
+func _db() -> Node:
+	return get_node_or_null("/root/appliance_database")
+	
+func _storage() -> Node:
+	return get_node_or_null("/root/storage_manager")
+
+#═══════════════════════════════════════════════════════════════
+#	CURRENT APPLIANCE STATES
+#	Tracks current tier of each appliance
+#	0 = no oni assigned, 1-3 = upgrade tiers
+#═══════════════════════════════════════════════════════════════
+
+var appliance_tiers = {
+	"stove":			0,
+	"cooking_pot":		0,
+	"oven":				0,
+	"brewing_still":	0,
+	"smoker":			0,
+	"fermenter":		0,
+}
+
+
+#═══════════════════════════════════════════════════════════════
+#	CAPTURED ELEMENTAL ONI
+#	Tracks how many of each elemental oni are captured
+# 	Multiple captures allow tier upgrades
+#═══════════════════════════════════════════════════════════════
+
+var captured_oni = {
+	"kaki":		0,
+	"suiki":	0,
+	"doki":		0,
+	"kinki":	0,
+	"fuuki":	0,
+	"numaki":	0,
+}
+
+#═══════════════════════════════════════════════════════════════
+#			APPLIANCE QUERY FUNCTIONS
+#═══════════════════════════════════════════════════════════════
+
+func get_appliance_tier(appliance: String) -> int:
+	# Returns current tier of an appliance 0-3
+	if not appliance_tiers.has(appliance):
+		return 0
+	return appliance_tiers[appliance]
+	
+func get_appliance_data(appliance: String) -> Dictionary:
+	# Returns full appliance data for current tier
+	var db = _db()
+	if not db or not db.APPLIANCES.has(appliance):
+		return{}
+	var tier = get_appliance_tier(appliance)
+	return db.APPLIANCES[appliance]["tiers"][tier]
+	
+func get_appliance_bonus(appliance: String, bonus_key: String) -> float:
+	# Returns a specific bonus value for the current appliance tier
+	var data = get_appliance_data(appliance)
+	if data.is_empty() or not data.has(bonus_key):
+		return 0.0
+	return data [bonus_key]
+	
+func is_unlocked(appliance: String, feature: String) -> bool:
+	# Check if a specific feature is unlocked for an appliance
+	var data = get_appliance_data(appliance)
+	if data.is_empty() or not data.has("unlocks"):
+		return false
+	return feature in data["unlocks"]
+	
+func can_upgrade_appliance(appliance: String) -> bool:
+	# Check if appliance can be upgraded — needs more captured oni
+	var db = _db()
+	if not db or not db.APPLIANCES.has(appliance):
+		return false
+	var current_tier = get_appliance_tier(appliance)
+	if current_tier >= 3:
+		return false
+	var required_oni 	= db.APPLIANCES[appliance]["oni"]
+	var captured		= captured_oni[required_oni]
+	#	Need 1 oni for tier 1, 2 for tier 2, 3 for tier 3
+	return captured > current_tier
+	
+	
+#═══════════════════════════════════════════════════════════════
+#					ONI CAPTURE FUNCTIONS
+#═══════════════════════════════════════════════════════════════
+	
+func capture_oni(oni_type: String) -> Dictionary:
+	# Called when player successfully captures an elemental oni
+	if not captured_oni.has(oni_type):
+		return{"success": false, "message": "Unkown oni type: " + oni_type}
+		
+		
+	captured_oni[oni_type] += 1
+	var count = captured_oni[oni_type]
+	
+	print("Captured ", oni_type, "! Total: ", count)
+	
+	# Check if this unlocks an appliance upgrade
+	var appliance = _get_appliance_for_oni(oni_type)
+	if appliance != "" and can_upgrade_appliance(appliance):
+		var db = _db()
+		return{
+			"success":		true,
+			"message":		oni_type + " captured! " + db.APPLIANCES[appliance]["name"] + " can now be upgraded!",
+			"can_upgrade":	true,
+			"appliance":	appliance,
+		}
+	return {
+		"success":		true,
+		"message":		oni_type + " captured! Total: " + str(count),
+		"can_upgrade":	false,
+		"appliance": 	appliance,
+	}
+	
+func assign_oni_to_appliance(appliance: String) -> Dictionary:
+	# Upgrades an appliance by assigning a captured oni to it
+	if not can_upgrade_appliance(appliance):
+		return{"success": false, "message": "Cannot upgrade " + appliance + " — capture more oni first!"}
+	
+	appliance_tiers[appliance] += 1
+	var new_tier 	= appliance_tiers[appliance]
+	var tier_data 	= get_appliance_data(appliance)
+	var db			= _db()
+	
+	print("=== APPLIANCE UPGRADED ===")
+	print(db.APPLIANCES[appliance]["name"], " -> ", tier_data["name"])
+	print(tier_data["description"])
+	
+	#Apply any storage capacity bonuses from this tier unlock
+	_apply_tier_bonuses(appliance, tier_data)
+	
+	return {
+		"success":		true,
+		"appliance":	appliance,
+		"new_tier":		new_tier,
+		"tier_name":	tier_data["name"],
+		"message":		tier_data["description"],
+		"unlocks":		tier_data["unlocks"],
+	}
+	
+func _apply_tier_bonuses(appliance: String, tier_data: Dictionary) -> void:
+	#Applies any storage bonuses associated with an appliance tier
+	var storage = _storage()
+	if not storage:
+		return
+	# Fermenter upgrades boost pickle storage capacity
+	if appliance == "fermenter":
+		storage.apply_oni_capacity_bonus("pickle", 5)
+
+func _get_appliance_for_oni(oni_type: String) -> String:
+	# Returns which appliance an oni type upgrades
+	var db = _db()
+	if not db:
+		return ""
+	for appliance in db.APPLIANCES:
+		if db.APPLIANCES[appliance]["oni"] == oni_type:
+			return appliance
+	return ""
+
+#═══════════════════════════════════════════════════════════════
+#		PASS-THROUGH CAPACITY FUNCTIONS
+#		Covenience wrappers so other scripts only need to 
+#		call upgrade_manager - not storage_manager directly
+#═══════════════════════════════════════════════════════════════
+
+
+#═══════════════════════════════════════════════════════════════
+#				DEBUG HELPERS
+#═══════════════════════════════════════════════════════════════
+
+func print_appliance_status() -> void:
+	var db = _db()
+	if not db:
+		return
+	print("=== KITCHEN APPLIANCES ===")
+	for appliance in db.APPLIANCES:
+		var tier		= get_appliance_tier(appliance)
+		var tier_data	= get_appliance_data(appliance)
+		var oni			= db.APPLIANCES[appliance]["oni"]
+		var captured	= captured_oni[oni]
+		print(db.APPLIANCES[appliance]["name"], ": Tier ", tier, "/3 —", tier_data["name"])
+		print("		Captured ", oni, ": 0", captured)
+		if can_upgrade_appliance(appliance):
+			print(" *** UPGRADE AVAILABLE ***")
+		if not tier_data["unlocks"].is_empty():
+			print(" Unlocked: ", tier_data["unlocks"])
+			
+func print_captured_oni() -> void:
+	var db = _db()
+	if not db:
+		return
+	print("=== CAPTURED ONI ===")
+	for oni in captured_oni:
+		var appliance 	= _get_appliance_for_oni(oni)
+		var tier		= get_appliance_tier(appliance)
+		print(oni, ": ", captured_oni[oni], "captured —",
+			db.APPLIANCES[appliance]["name"], " tier ", tier, "/3")
+			
+func print_storage_status(inventory: Dictionary, ingredients: Dictionary) -> void:
+	var storage = _storage()
+	if not storage:
+		return
+	storage.print_storage_status(inventory, ingredients)
